@@ -181,8 +181,17 @@ Corollary soundness : forall t t' T,
 Proof.
   intros t t' T Hhas_type Hmulti. unfold stuck.
   intros [Hnf Hnot_val]. unfold normal_form in Hnf.
-  induction Hmulti.
-  (* FILL IN HERE *) Admitted.
+  induction Hmulti. apply Hnot_val. 
+   destruct (progress x0 T).
+   apply Hhas_type. apply H.
+   contradiction.
+
+   apply IHHmulti.
+   apply (preservation x0 y0). apply Hhas_type. apply H.
+   apply Hnf. apply Hnot_val.
+Qed.
+  
+
 
 End STLCProp.
 
