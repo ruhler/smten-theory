@@ -5,6 +5,7 @@ Module STLC.
 
 Inductive ty : Type := 
   | TBool  : ty                     (* Bool *)
+  | TUnit  : ty                     (* Unit *)
   | TArrow : ty -> ty -> ty.        (* T -> T *)
 
 Inductive tm : Type :=
@@ -13,13 +14,15 @@ Inductive tm : Type :=
   | tabs : id -> ty -> tm -> tm     (* \x:T.t *)
   | ttrue : tm                      (* true *)
   | tfalse : tm                     (* false *)
-  | tif : tm -> tm -> tm -> tm.     (* if t1 then t2 else t3 *)
+  | tif : tm -> tm -> tm -> tm      (* if t1 then t2 else t3 *)
+  | tunit : tm.                     (* unit *)
 
 Tactic Notation "t_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "tvar" | Case_aux c "tapp" 
   | Case_aux c "tabs" | Case_aux c "ttrue" 
-  | Case_aux c "tfalse" | Case_aux c "tif" ].
+  | Case_aux c "tfalse" | Case_aux c "tif"
+  | Case_aux c "tunit" ].
 
 Definition x := (Id 0).
 Definition y := (Id 1).
@@ -34,7 +37,9 @@ Inductive value : tm -> Prop :=
   | v_true : 
       value ttrue
   | v_false : 
-      value tfalse.
+      value tfalse
+  | v_unit :
+      value tunit.
 
 Hint Constructors value.
 
@@ -54,6 +59,8 @@ Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
       tfalse
   | tif t1 t2 t3 => 
       tif ([x:=s] t1) ([x:=s] t2) ([x:=s] t3)
+  | tunit =>
+      tunit
   end
 
 where "'[' x ':=' s ']' t" := (subst x s t).
@@ -112,6 +119,8 @@ Inductive has_type : context -> tm -> ty -> Prop :=
        Gamma |- t2 \in T ->
        Gamma |- t3 \in T ->
        Gamma |- tif t1 t2 t3 \in T
+  | T_Unit : forall Gamma,
+       Gamma |- tunit \in TUnit
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T).
 
@@ -119,7 +128,8 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "T_Var" | Case_aux c "T_Abs" 
   | Case_aux c "T_App" | Case_aux c "T_True" 
-  | Case_aux c "T_False" | Case_aux c "T_If" ].
+  | Case_aux c "T_False" | Case_aux c "T_If" 
+  | Case_aux c "T_Unit" ].
 
 Hint Constructors has_type.
 

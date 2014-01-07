@@ -23,7 +23,7 @@ Proof with eauto.
     right. destruct IHHt1...
     SCase "t1 is a value".
       inversion H; subst. exists ([x0:=t2]t)...
-      solve by inversion. solve by inversion.
+      solve by inversion. solve by inversion. solve by inversion.
 
     SCase "t1 steps".
       inversion H as [t1' Hstp]. exists (tapp t1' t2)...
@@ -37,6 +37,7 @@ Proof with eauto.
       inversion H; subst. solve by inversion.
       SSCase "t1 = true". eauto.
       SSCase "t1 = false". eauto.
+      SSCase "t1 = unit". solve by inversion.
 
     SCase "t1 also steps".
       inversion H as [t1' Hstp]. exists (tif t1' t2 t3)...

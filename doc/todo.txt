@@ -1,6 +1,4 @@
 Baseline::
-* change call-by-value to call-by-name
-* add Unit - verify through to progress
 * add pairs - verify through to progress
 * add sums - verify through to progress
 * add fix - verify through to progress
