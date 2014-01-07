@@ -28,19 +28,6 @@ Proof with eauto.
     SCase "t1 steps".
       inversion H as [t1' Hstp]. exists (tapp t1' t2)...
 
-  Case "T_If".
-    right. destruct IHHt1...
-    
-    SCase "t1 is a value".
-      (* Since [t1] is a value of boolean type, it must
-         be true or false *)
-      v_cases (inversion H) SSCase; subst; try solve by inversion.
-      SSCase "v_true". eauto.
-      SSCase "v_false". eauto.
-
-    SCase "t1 also steps".
-      inversion H as [t1' Hstp]. exists (tif t1' t2 t3)...
-
   Case "T_Fst".
     right. destruct IHHt...
 
@@ -90,15 +77,6 @@ Inductive appears_free_in : id -> tm -> Prop :=
       y <> x  ->
       appears_free_in x t12 ->
       appears_free_in x (tabs y T11 t12)
-  | afi_if1 : forall x t1 t2 t3,
-      appears_free_in x t1 ->
-      appears_free_in x (tif t1 t2 t3)
-  | afi_if2 : forall x t1 t2 t3,
-      appears_free_in x t2 ->
-      appears_free_in x (tif t1 t2 t3)
-  | afi_if3 : forall x t1 t2 t3,
-      appears_free_in x t3 ->
-      appears_free_in x (tif t1 t2 t3)
   | afi_pair1 : forall x t1 t2,
       appears_free_in x t1 ->
       appears_free_in x (tpair t1 t2)
@@ -133,8 +111,6 @@ Tactic Notation "afi_cases" tactic(first) ident(c) :=
   [ Case_aux c "afi_var"
   | Case_aux c "afi_app1" | Case_aux c "afi_app2" 
   | Case_aux c "afi_abs" 
-  | Case_aux c "afi_if1" | Case_aux c "afi_if2" 
-  | Case_aux c "afi_if3" 
   | Case_aux c "afi_pair1" | Case_aux c "afi_pair2"
   | Case_aux c "afi_fst" | Case_aux c "afi_snd" 
   | Case_aux c "afi_inl" | Case_aux c "afi_inr"

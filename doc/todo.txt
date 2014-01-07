@@ -1,5 +1,4 @@
 Baseline::
-* remove Bool (because Unit + Unit takes care of it)
 * add fix - verify through to progress
 
 Source::
