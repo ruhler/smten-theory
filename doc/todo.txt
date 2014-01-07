@@ -1,6 +1,3 @@
-Baseline::
-* add fix - verify through to progress
-
 Source::
 * add Symbolic, IO (with just return, bind, and run)
 

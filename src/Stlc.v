@@ -26,6 +26,7 @@ Inductive tm : Type :=
   | tinl : ty -> tm -> tm           (* inl T t *)
   | tinr : ty -> tm -> tm           (* inr T t *)
   | tcase : tm -> tm -> tm -> tm    (* case t0 t1 t2 *)
+  | tfix : tm -> tm                 (* fix t *)
   .
 
 Tactic Notation "t_cases" tactic(first) ident(c) :=
@@ -33,7 +34,8 @@ Tactic Notation "t_cases" tactic(first) ident(c) :=
   [ Case_aux c "tvar" | Case_aux c "tapp" 
   | Case_aux c "tabs" | Case_aux c "tunit" 
   | Case_aux c "tpair" | Case_aux c "tfst" | Case_aux c "tsnd" 
-  | Case_aux c "tinl" | Case_aux c "tinr" | Case_aux c "tcase" ].
+  | Case_aux c "tinl" | Case_aux c "tinr" | Case_aux c "tcase"
+  | Case_aux c "tfix" ].
 
 Definition x := (Id 0).
 Definition y := (Id 1).
@@ -87,6 +89,8 @@ Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
       tinr T ([x:=s] t1)
   | tcase t1 t2 t3 =>
       tcase ([x:=s] t1) ([x:=s] t2) ([x:=s] t3)
+  | tfix t1 =>
+      tfix ([x:=s] t1)
   end
 
 where "'[' x ':=' s ']' t" := (subst x s t).
@@ -117,6 +121,8 @@ Inductive step : tm -> tm -> Prop :=
   | ST_Case : forall t1 t1' t2 t3,
       t1 ==> t1' ->
       tcase t1 t2 t3 ==> tcase t1' t2 t3
+  | ST_Fix : forall t,
+      tfix t ==> tapp t (tfix t)
 
 where "t1 '==>' t2" := (step t1 t2).
 
@@ -125,7 +131,8 @@ Tactic Notation "step_cases" tactic(first) ident(c) :=
   [ Case_aux c "ST_AppAbs" | Case_aux c "ST_App1" 
   | Case_aux c "ST_FstPair" | Case_aux c "ST_Fst"
   | Case_aux c "ST_SndPair" | Case_aux c "ST_Snd"
-  | Case_aux c "ST_CaeInl" | Case_aux c "ST_CaseInr" | Case_aux c "ST_Case" ].
+  | Case_aux c "ST_CaeInl" | Case_aux c "ST_CaseInr" | Case_aux c "ST_Case" 
+  | Case_aux c "ST_Fix" ].
 
 Hint Constructors step.
 
@@ -170,6 +177,9 @@ Inductive has_type : context -> tm -> ty -> Prop :=
        Gamma |- t2 \in (TArrow T1 T3) ->
        Gamma |- t3 \in (TArrow T2 T3) ->
        Gamma |- (tcase t1 t2 t3) \in T3
+  | T_Fix : forall Gamma t T,
+       Gamma |- t \in (TArrow T T) ->
+       Gamma |- tfix t \in T
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T).
 
@@ -178,7 +188,8 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   [ Case_aux c "T_Var" | Case_aux c "T_Abs" 
   | Case_aux c "T_App" | Case_aux c "T_Unit" 
   | Case_aux c "T_Pair" | Case_aux c "T_Fst" | Case_aux c "T_Snd" 
-  | Case_aux c "T_Inl" | Case_aux c "T_Inr" | Case_aux c "T_Case" ].
+  | Case_aux c "T_Inl" | Case_aux c "T_Inr" | Case_aux c "T_Case" 
+  | Case_aux c "T_Fix" ].
 
 Hint Constructors has_type.
 

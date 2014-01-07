@@ -104,6 +104,9 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_case3 : forall x t1 t2 t3,
       appears_free_in x t3 ->
       appears_free_in x (tcase t1 t2 t3)
+  | afi_fix : forall x t,
+      appears_free_in x t ->
+      appears_free_in x (tfix t)
   .
 
 Tactic Notation "afi_cases" tactic(first) ident(c) :=
@@ -115,7 +118,7 @@ Tactic Notation "afi_cases" tactic(first) ident(c) :=
   | Case_aux c "afi_fst" | Case_aux c "afi_snd" 
   | Case_aux c "afi_inl" | Case_aux c "afi_inr"
   | Case_aux c "afi_case1" | Case_aux c "afi_case2"
-  | Case_aux c "afi_case3" ].
+  | Case_aux c "afi_case3" | Case_aux c "afi_fix" ].
 
 Hint Constructors appears_free_in.
 
@@ -230,6 +233,8 @@ Proof with eauto.
     inversion HE; subst...
     SCase "inl". inversion HT1; subst...
     SCase "inr". inversion HT1; subst...
+  Case "T_Fix".
+    inversion HE; subst...
 Qed.
 
 Definition stuck (t:tm) : Prop :=
