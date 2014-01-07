@@ -22,13 +22,9 @@ Proof with eauto.
        value or steps... *)
     right. destruct IHHt1...
     SCase "t1 is a value".
-      v_cases (inversion H) SSCase; subst.
+      v_cases (inversion H) SSCase; subst; try solve by inversion.
       SSCase "v_abs". exists ([x0:=t2]t)...
-      SSCase "v_true". solve by inversion.
-      SSCase "v_false". solve by inversion.
-      SSCase "v_unit". solve by inversion.
-      SSCase "v_pair". solve by inversion.
-
+ 
     SCase "t1 steps".
       inversion H as [t1' Hstp]. exists (tapp t1' t2)...
 
@@ -38,12 +34,9 @@ Proof with eauto.
     SCase "t1 is a value".
       (* Since [t1] is a value of boolean type, it must
          be true or false *)
-      v_cases (inversion H) SSCase; subst.
-      SSCase "v_abs". solve by inversion.
+      v_cases (inversion H) SSCase; subst; try solve by inversion.
       SSCase "v_true". eauto.
       SSCase "v_false". eauto.
-      SSCase "v_unit". solve by inversion.
-      SSCase "v_pair". solve by inversion.
 
     SCase "t1 also steps".
       inversion H as [t1' Hstp]. exists (tif t1' t2 t3)...
@@ -54,12 +47,9 @@ Proof with eauto.
     SCase "t is a value".
       (* Since [t] is a value of product type, it must
          be a pair *)
-      v_cases (inversion H) SSCase; subst.
-      SSCase "v_abs". solve by inversion.
-      SSCase "v_true". solve by inversion.
-      SSCase "v_false". solve by inversion.
-      SSCase "v_unit". solve by inversion.
+      v_cases (inversion H) SSCase; subst; try solve by inversion.
       SSCase "v_pair". eauto.
+
 
     SCase "t also steps".
       inversion H as [t' Hstp]. exists (tfst t')...
@@ -70,15 +60,23 @@ Proof with eauto.
     SCase "t is a value".
       (* Since [t] is a value of product type, it must
          be a pair *)
-      v_cases (inversion H) SSCase; subst.
-      SSCase "v_abs". solve by inversion.
-      SSCase "v_true". solve by inversion.
-      SSCase "v_false". solve by inversion.
-      SSCase "v_unit". solve by inversion.
+      v_cases (inversion H) SSCase; subst; try solve by inversion.
       SSCase "v_pair". eauto.
 
     SCase "t also steps".
       inversion H as [t' Hstp]. exists (tsnd t')...
+
+  Case "T_Case".
+    right. destruct IHHt1...
+
+    SCase "t1 is a value".
+      v_cases (inversion H) SSCase; subst; try solve by inversion.
+      SSCase "v_inl". eauto.
+      SSCase "v_inr". eauto.
+
+    SCase "t1 also steps".
+      inversion H as [t1' Hstp]. exists (tcase t1' t2 t3)...
+
 Qed.
 
 Inductive appears_free_in : id -> tm -> Prop :=
@@ -113,6 +111,21 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_snd : forall x t,
       appears_free_in x t ->
       appears_free_in x (tsnd t)
+  | afi_inl : forall x T t,
+      appears_free_in x t ->
+      appears_free_in x (tinl T t)
+  | afi_inr : forall x T t,
+      appears_free_in x t ->
+      appears_free_in x (tinr T t)
+  | afi_case1 : forall x t1 t2 t3,
+      appears_free_in x t1 ->
+      appears_free_in x (tcase t1 t2 t3)
+  | afi_case2 : forall x t1 t2 t3,
+      appears_free_in x t2 ->
+      appears_free_in x (tcase t1 t2 t3)
+  | afi_case3 : forall x t1 t2 t3,
+      appears_free_in x t3 ->
+      appears_free_in x (tcase t1 t2 t3)
   .
 
 Tactic Notation "afi_cases" tactic(first) ident(c) :=
@@ -123,7 +136,10 @@ Tactic Notation "afi_cases" tactic(first) ident(c) :=
   | Case_aux c "afi_if1" | Case_aux c "afi_if2" 
   | Case_aux c "afi_if3" 
   | Case_aux c "afi_pair1" | Case_aux c "afi_pair2"
-  | Case_aux c "afi_fst" | Case_aux c "afi_snd" ].
+  | Case_aux c "afi_fst" | Case_aux c "afi_snd" 
+  | Case_aux c "afi_inl" | Case_aux c "afi_inr"
+  | Case_aux c "afi_case1" | Case_aux c "afi_case2"
+  | Case_aux c "afi_case3" ].
 
 Hint Constructors appears_free_in.
 
@@ -169,6 +185,8 @@ Proof with eauto.
     apply T_Fst with T2...
   Case "T_Snd".
     apply T_Snd with T1...
+  Case "T_Case".
+    apply T_Case with T1 T2...
 Qed.
 
 Lemma substitution_preserves_typing : forall Gamma x U t v T,
@@ -232,6 +250,10 @@ Proof with eauto.
   Case "T_Snd".
     inversion HE; subst...
     inversion HT; subst...
+  Case "T_Case".
+    inversion HE; subst...
+    SCase "inl". inversion HT1; subst...
+    SCase "inr". inversion HT1; subst...
 Qed.
 
 Definition stuck (t:tm) : Prop :=

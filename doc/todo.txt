@@ -1,6 +1,5 @@
 Baseline::
-* add pairs - verify through to progress
-* add sums - verify through to progress
+* remove Bool (because Unit + Unit takes care of it)
 * add fix - verify through to progress
 
 Source::
