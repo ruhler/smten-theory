@@ -1,0 +1,16 @@
+Baseline::
+* make a copy of STLC for Smten.
+* run SmtenSTLC.
+* change call-by-value to call-by-name
+* add Unit - verify through to progress
+* add pairs - verify through to progress
+* add sums - verify through to progress
+* add fix - verify through to progress
+
+Source::
+* add Symbolic, IO (with just return, bind, and run)
+
+Target::
+* add SAT
+* add select
+

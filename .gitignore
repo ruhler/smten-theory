@@ -1,0 +1,4 @@
+lib/*.glob
+lib/*.vo
+src/*.glob
+src/*.vo
