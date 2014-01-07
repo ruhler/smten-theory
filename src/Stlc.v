@@ -62,16 +62,11 @@ where "'[' x ':=' s ']' t" := (subst x s t).
 Reserved Notation "t1 '==>' t2" (at level 40).
 
 Inductive step : tm -> tm -> Prop :=
-  | ST_AppAbs : forall x T t12 v2,
-         value v2 ->
-         (tapp (tabs x T t12) v2) ==> [x:=v2]t12
+  | ST_AppAbs : forall x T t1 t2,
+         (tapp (tabs x T t1) t2) ==> [x:=t2]t1
   | ST_App1 : forall t1 t1' t2,
          t1 ==> t1' ->
          tapp t1 t2 ==> tapp t1' t2
-  | ST_App2 : forall v1 t2 t2',
-         value v1 ->
-         t2 ==> t2' -> 
-         tapp v1 t2 ==> tapp v1  t2'
   | ST_IfTrue : forall t1 t2,
       (tif ttrue t1 t2) ==> t1
   | ST_IfFalse : forall t1 t2,
@@ -85,7 +80,7 @@ where "t1 '==>' t2" := (step t1 t2).
 Tactic Notation "step_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "ST_AppAbs" | Case_aux c "ST_App1" 
-  | Case_aux c "ST_App2" | Case_aux c "ST_IfTrue" 
+  | Case_aux c "ST_IfTrue" 
   | Case_aux c "ST_IfFalse" | Case_aux c "ST_If" ].
 
 Hint Constructors step.
