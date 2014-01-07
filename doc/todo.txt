@@ -1,6 +1,4 @@
 Baseline::
-* make a copy of STLC for Smten.
-* run SmtenSTLC.
 * change call-by-value to call-by-name
 * add Unit - verify through to progress
 * add pairs - verify through to progress
