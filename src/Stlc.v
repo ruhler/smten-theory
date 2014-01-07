@@ -4,9 +4,15 @@ Require Export Types.
 Module STLC.
 
 Inductive ty : Type := 
+  | TArrow : ty -> ty -> ty         (* T -> T *)
   | TBool  : ty                     (* Bool *)
   | TUnit  : ty                     (* Unit *)
-  | TArrow : ty -> ty -> ty.        (* T -> T *)
+  | TProd  : ty -> ty -> ty.        (* (T1, T2) *)
+
+Tactic Notation "T_cases" tactic(first) ident(c) :=
+  first;
+  [ Case_aux c "TArrow" | Case_aux c "TBool"
+  | Case_aux c "TUnit" | Case_aux c "TProd" ].
 
 Inductive tm : Type :=
   | tvar : id -> tm                 (* x *)
@@ -15,14 +21,18 @@ Inductive tm : Type :=
   | ttrue : tm                      (* true *)
   | tfalse : tm                     (* false *)
   | tif : tm -> tm -> tm -> tm      (* if t1 then t2 else t3 *)
-  | tunit : tm.                     (* unit *)
+  | tunit : tm                      (* unit *)
+  | tpair : tm -> tm -> tm          (* (t1, t2) *)
+  | tfst : tm -> tm                 (* fst t1 *)
+  | tsnd : tm -> tm                 (* snd t1 *)
+  .
 
 Tactic Notation "t_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "tvar" | Case_aux c "tapp" 
   | Case_aux c "tabs" | Case_aux c "ttrue" 
-  | Case_aux c "tfalse" | Case_aux c "tif"
-  | Case_aux c "tunit" ].
+  | Case_aux c "tfalse" | Case_aux c "tif" | Case_aux c "tunit" 
+  | Case_aux c "tpair" | Case_aux c "tfst" | Case_aux c "tsnd" ].
 
 Definition x := (Id 0).
 Definition y := (Id 1).
@@ -39,7 +49,16 @@ Inductive value : tm -> Prop :=
   | v_false : 
       value tfalse
   | v_unit :
-      value tunit.
+      value tunit 
+  | v_pair : forall t1 t2,
+      value (tpair t1 t2)
+  .
+
+Tactic Notation "v_cases" tactic(first) ident(c) :=
+  first;
+  [ Case_aux c "v_abs" | Case_aux c "v_true"
+  | Case_aux c "v_false" | Case_aux c "v_unit"
+  | Case_aux c "v_pair" ].
 
 Hint Constructors value.
 
@@ -61,6 +80,12 @@ Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
       tif ([x:=s] t1) ([x:=s] t2) ([x:=s] t3)
   | tunit =>
       tunit
+  | tpair t1 t2 =>
+      tpair ([x:=s] t1) ([x:=s] t2)
+  | tfst t1 =>
+      tfst ([x:=s] t1)
+  | tsnd t1 =>
+      tsnd ([x:=s] t1)
   end
 
 where "'[' x ':=' s ']' t" := (subst x s t).
@@ -81,14 +106,25 @@ Inductive step : tm -> tm -> Prop :=
   | ST_If : forall t1 t1' t2 t3,
       t1 ==> t1' ->
       (tif t1 t2 t3) ==> (tif t1' t2 t3)
+  | ST_FstPair : forall t1 t2,
+      (tfst (tpair t1 t2)) ==> t1
+  | ST_Fst : forall t t',
+      t ==> t' ->
+      tfst t ==> tfst t'
+  | ST_SndPair : forall t1 t2,
+      (tsnd (tpair t1 t2)) ==> t2
+  | ST_Snd : forall t t',
+      t ==> t' ->
+      tsnd t ==> tsnd t'
 
 where "t1 '==>' t2" := (step t1 t2).
 
 Tactic Notation "step_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "ST_AppAbs" | Case_aux c "ST_App1" 
-  | Case_aux c "ST_IfTrue" 
-  | Case_aux c "ST_IfFalse" | Case_aux c "ST_If" ].
+  | Case_aux c "ST_IfTrue" | Case_aux c "ST_IfFalse" | Case_aux c "ST_If"
+  | Case_aux c "ST_FstPair" | Case_aux c "ST_Fst"
+  | Case_aux c "ST_SndPair" | Case_aux c "St_Snd"].
 
 Hint Constructors step.
 
@@ -121,6 +157,16 @@ Inductive has_type : context -> tm -> ty -> Prop :=
        Gamma |- tif t1 t2 t3 \in T
   | T_Unit : forall Gamma,
        Gamma |- tunit \in TUnit
+  | T_Pair : forall Gamma t1 t2 T1 T2,
+       Gamma |- t1 \in T1 ->
+       Gamma |- t2 \in T2 ->
+       Gamma |- (tpair t1 t2) \in (TProd T1 T2)
+  | T_Fst : forall Gamma t T1 T2,
+       Gamma |- t \in (TProd T1 T2) ->
+       Gamma |- (tfst t) \in T1
+  | T_Snd : forall Gamma t T1 T2,
+       Gamma |- t \in (TProd T1 T2) ->
+       Gamma |- (tsnd t) \in T2
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T).
 
@@ -129,7 +175,8 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   [ Case_aux c "T_Var" | Case_aux c "T_Abs" 
   | Case_aux c "T_App" | Case_aux c "T_True" 
   | Case_aux c "T_False" | Case_aux c "T_If" 
-  | Case_aux c "T_Unit" ].
+  | Case_aux c "T_Unit" 
+  | Case_aux c "T_Pair" | Case_aux c "T_Fst" | Case_aux c "T_Snd" ].
 
 Hint Constructors has_type.
 
