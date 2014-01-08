@@ -1,8 +1,8 @@
 
-Require Export Stlc.
+Require Export Smten.
 
-Module STLCProp.
-Import STLC.
+Module SmtenProp.
+Import Smten.Smten.
 
 Theorem progress : forall t T, 
      empty |- t \in T ->
@@ -259,5 +259,5 @@ Qed.
   
 
 
-End STLCProp.
+End SmtenProp.
 

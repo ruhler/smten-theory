@@ -1,5 +1,5 @@
 
-default: src/StlcProp.vo
+default: src/SmtenProp.vo
 
 %.vo: %.v
 	coqc -I lib -I src $<
@@ -7,8 +7,8 @@ default: src/StlcProp.vo
 lib/Types.vo: lib/Smallstep.vo
 lib/Smallstep.vo: lib/Imp.vo
 lib/Imp.vo: lib/SfLib.vo
-src/Stlc.vo: lib/Types.vo
-src/StlcProp.vo: src/Stlc.vo
+src/Smten.vo: lib/Types.vo
+src/SmtenProp.vo: src/Smten.vo
 
 clean:
 	rm lib/*.vo src/*.vo lib/*.glob src/*.glob

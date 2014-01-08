@@ -1,7 +1,7 @@
 
 Require Export Types.
 
-Module STLC.
+Module Smten.
 
 Inductive ty : Type := 
   | TArrow : ty -> ty -> ty         (* T -> T *)
@@ -193,5 +193,5 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
 
 Hint Constructors has_type.
 
-End STLC.
+End Smten.
 
