@@ -50,20 +50,13 @@ Hint Unfold y.
 Hint Unfold z.
 
 Inductive value : tm -> Prop :=
-  | v_abs : forall x T t,
-      value (tabs x T t)
-  | v_unit :
-      value tunit 
-  | v_pair : forall t1 t2,
-      value (tpair t1 t2)
-  | v_inl : forall T t,
-      value (tinl T t)
-  | v_inr : forall T t,
-      value (tinr T t)
-  | v_returnio : forall t,
-      value (treturnio t)
-  | v_bindio : forall t1 t2,
-      value (tbindio t1 t2)
+  | v_abs : forall x T t, value (tabs x T t)
+  | v_unit : value tunit 
+  | v_pair : forall t1 t2, value (tpair t1 t2)
+  | v_inl : forall T t, value (tinl T t)
+  | v_inr : forall T t, value (tinr T t)
+  | v_returnio : forall t, value (treturnio t)
+  | v_bindio : forall t1 t2, value (tbindio t1 t2)
   .
 
 Tactic Notation "v_cases" tactic(first) ident(c) :=
@@ -132,7 +125,7 @@ Tactic Notation "step_cases" tactic(first) ident(c) :=
   [ Case_aux c "ST_AppAbs" | Case_aux c "ST_App1" 
   | Case_aux c "ST_FstPair" | Case_aux c "ST_Fst"
   | Case_aux c "ST_SndPair" | Case_aux c "ST_Snd"
-  | Case_aux c "ST_CaeInl" | Case_aux c "ST_CaseInr" | Case_aux c "ST_Case" 
+  | Case_aux c "ST_CaseInl" | Case_aux c "ST_CaseInr" | Case_aux c "ST_Case" 
   | Case_aux c "ST_Fix" ].
 
 Hint Constructors step.
