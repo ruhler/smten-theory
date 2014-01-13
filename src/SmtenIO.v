@@ -93,5 +93,27 @@ Proof with eauto.
      apply T_BindIO with T1...
 Qed.
 
+Definition stuckio (t:tm) : Prop :=
+  (normal_form stepio) t /\ ~ valueio t.
+
+Corollary soundnessio : forall t t' T,
+  empty |- t \in T -> 
+  (exists T1, T = TIO T1) ->
+  t =IO=>* t' ->
+  ~(stuckio t').
+Proof.
+  intros t t' T Hhas_type Hio Hmulti. unfold stuckio.
+  intros [Hnf Hnot_val]. unfold normal_form in Hnf.
+  induction Hmulti. apply Hnot_val. 
+   destruct (progressio x0 T).
+   apply Hhas_type. apply Hio. apply H.
+   contradiction.
+
+   apply IHHmulti.
+   apply (preservationio x0 y0). apply Hhas_type. apply H.
+   apply Hnf. apply Hnot_val.
+Qed.
+
+
 End SmtenIO.
 

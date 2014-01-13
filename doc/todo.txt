@@ -1,5 +1,4 @@
 Smten Unfair::
-* define IO computation and prove type soundness for it
 * add Symbolic, returns, binds, mzero, mplus to pure computation
 * add runio to pure and io computation, without fairness constraint.
 * state and prove the perseverance theorem (without fairness).
