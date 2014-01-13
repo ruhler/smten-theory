@@ -1,5 +1,13 @@
 Smten Unfair::
-* add Symbolic, returns, binds, mzero, mplus to pure computation
+* prove uniqueness of types
+* prove progress of S1 computation
+* prove preservation of S1
+* prove soundness of S1
+
+* prove progress of S
+* prove preservation of S
+* prove soundness of S
+
 * add runio to pure and io computation, without fairness constraint.
 * state and prove the perseverance theorem (without fairness).
 

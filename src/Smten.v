@@ -18,6 +18,50 @@ Tactic Notation "T_cases" tactic(first) ident(c) :=
   | Case_aux c "TUnit" | Case_aux c "TProd" | Case_aux c "TSum" 
   | Case_aux c "TIO" | Case_aux c "TS" ].
 
+Fixpoint beq_ty (T1 T2:ty) : bool :=
+  match T1,T2 with
+  | TArrow T11 T12, TArrow T21 T22 => andb (beq_ty T11 T21) (beq_ty T12 T22)
+  | TUnit, TUnit => true
+  | TProd T11 T12, TProd T21 T22 => andb (beq_ty T11 T21) (beq_ty T12 T22)
+  | TSum T11 T12, TSum T21 T22 => andb (beq_ty T11 T21) (beq_ty T12 T22)
+  | TIO T11, TIO T21 => beq_ty T11 T21
+  | TS T11, TS T21 => beq_ty T11 T21
+  | _, _ => false
+  end.
+
+Lemma beq_ty_refl : forall T1,
+  beq_ty T1 T1 = true.
+Proof.
+  intros T1.
+  T_cases(induction T1) Case; simpl.
+  Case "TArrow". rewrite IHT1_1. rewrite IHT1_2. reflexivity.
+  Case "TUnit". reflexivity.
+  Case "TProd". rewrite IHT1_1. rewrite IHT1_2. reflexivity.
+  Case "TSum". rewrite IHT1_1. rewrite IHT1_2. reflexivity.
+  Case "TIO". rewrite IHT1. reflexivity.
+  Case "TS". rewrite IHT1. reflexivity.
+Qed.
+
+Lemma beq_ty__eq : forall T1 T2,
+  beq_ty T1 T2 = true -> T1 = T2.
+Proof with auto.
+  intros T1.
+  T_cases(induction T1) Case;
+    intros T2 Hbeq; destruct T2; inversion Hbeq.
+  Case "TArrow".
+    apply andb_true in H0. inversion H0 as [Hbeq1 Hbeq2].
+    apply IHT1_1 in Hbeq1. apply IHT1_2 in Hbeq2. subst...
+  Case "TUnit". reflexivity.
+  Case "TProd".
+    apply andb_true in H0. inversion H0 as [Hbeq1 Hbeq2].
+    apply IHT1_1 in Hbeq1. apply IHT1_2 in Hbeq2. subst...
+  Case "TSum".
+    apply andb_true in H0. inversion H0 as [Hbeq1 Hbeq2].
+    apply IHT1_1 in Hbeq1. apply IHT1_2 in Hbeq2. subst...
+  Case "TIO". apply IHT1 in H0. subst...
+  Case "TS". apply IHT1 in H0. subst...
+Qed.
+
 Inductive tm : Type :=
   | tvar : id -> tm                 (* x *)
   | tapp : tm -> tm -> tm           (* t1 t2 *)
