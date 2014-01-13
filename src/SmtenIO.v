@@ -6,41 +6,41 @@ Module SmtenIO.
 Import Smten.Smten.
 Import SmtenProp.SmtenProp.
 
-Inductive valueio : tm -> Prop :=
-  | vio_return : forall t, valueio (treturnio t)
+Inductive valueIO : tm -> Prop :=
+  | vIO_return : forall t, valueIO (treturnIO t)
   .
 
-Hint Constructors valueio.
+Hint Constructors valueIO.
 
 
 Reserved Notation "t1 '=IO=>' t2" (at level 40).
 
-Inductive stepio : tm -> tm -> Prop :=
+Inductive stepIO : tm -> tm -> Prop :=
   | STIO_Pure : forall t t',
       t ==> t' ->
       t =IO=> t'
   | STIO_BindReturn : forall t1 t2,
-      tbindio (treturnio t1) t2 =IO=> tapp t2 t1
+      tbindIO (treturnIO t1) t2 =IO=> tapp t2 t1
   | STIO_Bind : forall t1 t1' t2,
       t1 =IO=> t1' ->
-      tbindio t1 t2 =IO=> tbindio t1' t2 
+      tbindIO t1 t2 =IO=> tbindIO t1' t2 
 
-where "t1 '=IO=>' t2" := (stepio t1 t2).
+where "t1 '=IO=>' t2" := (stepIO t1 t2).
 
-Tactic Notation "stepio_cases" tactic(first) ident(c) :=
+Tactic Notation "stepIO_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "STIO_Pure" | Case_aux c "STIO_BindReturn"
   | Case_aux c "STIO_Bind" ].
 
-Hint Constructors stepio.
+Hint Constructors stepIO.
 
-Notation multistepio := (multi stepio).
-Notation "t1 '=IO=>*' t2" := (multistepio t1 t2) (at level 40).
+Notation multistepIO := (multi stepIO).
+Notation "t1 '=IO=>*' t2" := (multistepIO t1 t2) (at level 40).
 
-Theorem progressio : forall t T,
+Theorem progressIO : forall t T,
     empty |- t \in T ->
     (exists T1 : ty, T = TIO T1) ->
-    valueio t \/ exists t', t =IO=> t'.
+    valueIO t \/ exists t', t =IO=> t'.
 
 Proof with eauto.
   intros t T Ht HIOt.
@@ -71,11 +71,11 @@ Proof with eauto.
      SCase "tcase steps". right. destruct H as [t4]...
   Case "T_BindIO".
      right. destruct IHHt1...
-     SCase "t1 is a valueio". inversion H...
-     SCase "t1 is tbindio". destruct H as [t3]...
+     SCase "t1 is a valueIO". inversion H...
+     SCase "t1 is tbindIO". destruct H as [t3]...
 Qed.
 
-Theorem preservationio : forall t t' T,
+Theorem preservationIO : forall t t' T,
      empty |- t \in T ->
      t =IO=> t' ->
      empty |- t' \in T.
@@ -83,7 +83,7 @@ Theorem preservationio : forall t t' T,
 Proof with eauto.
    intros t t' T HT Hstep.
    generalize dependent T.
-   stepio_cases (induction Hstep) Case; intros T HT; subst...
+   stepIO_cases (induction Hstep) Case; intros T HT; subst...
    Case "STIO_Pure". apply preservation with t...
    Case "STIO_BindReturn". 
      inversion HT. inversion H2.
@@ -93,24 +93,24 @@ Proof with eauto.
      apply T_BindIO with T1...
 Qed.
 
-Definition stuckio (t:tm) : Prop :=
-  (normal_form stepio) t /\ ~ valueio t.
+Definition stuckIO (t:tm) : Prop :=
+  (normal_form stepIO) t /\ ~ valueIO t.
 
-Corollary soundnessio : forall t t' T,
+Corollary soundnessIO : forall t t' T,
   empty |- t \in T -> 
   (exists T1, T = TIO T1) ->
   t =IO=>* t' ->
-  ~(stuckio t').
+  ~(stuckIO t').
 Proof.
-  intros t t' T Hhas_type Hio Hmulti. unfold stuckio.
+  intros t t' T Hhas_type Hio Hmulti. unfold stuckIO.
   intros [Hnf Hnot_val]. unfold normal_form in Hnf.
   induction Hmulti. apply Hnot_val. 
-   destruct (progressio x0 T).
+   destruct (progressIO x0 T).
    apply Hhas_type. apply Hio. apply H.
    contradiction.
 
    apply IHHmulti.
-   apply (preservationio x0 y0). apply Hhas_type. apply H.
+   apply (preservationIO x0 y0). apply Hhas_type. apply H.
    apply Hnf. apply Hnot_val.
 Qed.
 

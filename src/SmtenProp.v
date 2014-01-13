@@ -107,15 +107,15 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_fix : forall x t,
       appears_free_in x t ->
       appears_free_in x (tfix t)
-  | afi_returnio : forall x t,
+  | afi_returnIO : forall x t,
       appears_free_in x t ->
-      appears_free_in x (treturnio t)
-  | afi_bindio1 : forall x t1 t2,
+      appears_free_in x (treturnIO t)
+  | afi_bindIO1 : forall x t1 t2,
       appears_free_in x t1 ->
-      appears_free_in x (tbindio t1 t2)
-  | afi_bindio2 : forall x t1 t2,
+      appears_free_in x (tbindIO t1 t2)
+  | afi_bindIO2 : forall x t1 t2,
       appears_free_in x t2 ->
-      appears_free_in x (tbindio t1 t2)
+      appears_free_in x (tbindIO t1 t2)
   .
 
 Tactic Notation "afi_cases" tactic(first) ident(c) :=
@@ -128,8 +128,8 @@ Tactic Notation "afi_cases" tactic(first) ident(c) :=
   | Case_aux c "afi_inl" | Case_aux c "afi_inr"
   | Case_aux c "afi_case1" | Case_aux c "afi_case2"
   | Case_aux c "afi_case3" | Case_aux c "afi_fix" 
-  | Case_aux c "afi_returnio"
-  | Case_aux c "afi_bindio1" | Case_aux c "afi_bindio2" ].
+  | Case_aux c "afi_returnIO"
+  | Case_aux c "afi_bindIO1" | Case_aux c "afi_bindIO2" ].
 
 Hint Constructors appears_free_in.
 
