@@ -73,6 +73,10 @@ Proof with eauto.
      right. destruct IHHt1...
      SCase "t1 is a valueIO". inversion H...
      SCase "t1 is tbindIO". destruct H as [t3]...
+  Case "T_ReturnS". inversion HIOt. inversion H.
+  Case "T_BindS". inversion HIOt. inversion H.
+  Case "T_ZeroS". inversion HIOt. inversion H.
+  Case "T_PlusS". inversion HIOt. inversion H.  
 Qed.
 
 Theorem preservationIO : forall t t' T,

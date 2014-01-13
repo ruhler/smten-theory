@@ -9,13 +9,14 @@ Inductive ty : Type :=
   | TProd  : ty -> ty -> ty         (* T1 * T2 *)
   | TSum   : ty -> ty -> ty         (* T1 + T2 *)
   | TIO    : ty -> ty               (* IO T *)
+  | TS     : ty -> ty               (* S T *)
   .
 
 Tactic Notation "T_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "TArrow"
   | Case_aux c "TUnit" | Case_aux c "TProd" | Case_aux c "TSum" 
-  | Case_aux c "TIO" ].
+  | Case_aux c "TIO" | Case_aux c "TS" ].
 
 Inductive tm : Type :=
   | tvar : id -> tm                 (* x *)
@@ -31,6 +32,10 @@ Inductive tm : Type :=
   | tfix : tm -> tm                 (* fix t *)
   | treturnIO : tm -> tm            (* return_IO t *)
   | tbindIO : tm -> tm -> tm        (* bind_IO t1 t2 *)
+  | treturnS : tm -> tm             (* return_S t *)
+  | tbindS : tm -> tm -> tm         (* bind_S t1 t2 *)
+  | tzeroS : ty -> tm               (* mzero *)
+  | tplusS : tm -> tm -> tm         (* mplus *)
   .
 
 Tactic Notation "t_cases" tactic(first) ident(c) :=
@@ -40,7 +45,9 @@ Tactic Notation "t_cases" tactic(first) ident(c) :=
   | Case_aux c "tpair" | Case_aux c "tfst" | Case_aux c "tsnd" 
   | Case_aux c "tinl" | Case_aux c "tinr" | Case_aux c "tcase"
   | Case_aux c "tfix" 
-  | Case_aux c "treturnIO" | Case_aux c "tbindIO" ].
+  | Case_aux c "treturnIO" | Case_aux c "tbindIO" 
+  | Case_aux c "treturnS" | Case_aux c "tbindS"
+  | Case_aux c "tzeroS" | Case_aux c "tplusS" ].
 
 Definition x := (Id 0).
 Definition y := (Id 1).
@@ -57,6 +64,10 @@ Inductive value : tm -> Prop :=
   | v_inr : forall T t, value (tinr T t)
   | v_returnIO : forall t, value (treturnIO t)
   | v_bindIO : forall t1 t2, value (tbindIO t1 t2)
+  | v_returnS : forall t, value (treturnS t)
+  | v_bindS : forall t1 t2, value (tbindS t1 t2)
+  | v_zeroS : forall T, value (tzeroS T)
+  | v_plusS : forall t1 t2, value (tplusS t1 t2)
   .
 
 Tactic Notation "v_cases" tactic(first) ident(c) :=
@@ -64,7 +75,10 @@ Tactic Notation "v_cases" tactic(first) ident(c) :=
   [ Case_aux c "v_abs" | Case_aux c "v_unit"
   | Case_aux c "v_pair"
   | Case_aux c "v_inl" | Case_aux c "v_inr" 
-  | Case_aux c "v_returnIO" | Case_aux c "v_bindIO" ].
+  | Case_aux c "v_returnIO" | Case_aux c "v_bindIO"
+  | Case_aux c "v_returnS" | Case_aux c "v_bindS"
+  | Case_aux c "v_zeroS" | Case_aux c "v_plusS"
+  ].
 
 Hint Constructors value.
 
@@ -85,6 +99,10 @@ Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
   | tfix t1 => tfix ([x:=s] t1)
   | treturnIO t1 => treturnIO ([x:=s] t1)
   | tbindIO t1 t2 => tbindIO ([x:=s] t1) ([x:=s] t2)
+  | treturnS t1 => treturnS ([x:=s] t1)
+  | tbindS t1 t2 => tbindS ([x:=s] t1) ([x:=s] t2)
+  | tzeroS T => tzeroS T
+  | tplusS t1 t2 => tplusS ([x:=s] t1) ([x:=s] t2)
   end
 
 where "'[' x ':=' s ']' t" := (subst x s t).
@@ -181,6 +199,19 @@ Inductive has_type : context -> tm -> ty -> Prop :=
        Gamma |- t1 \in (TIO T1) ->
        Gamma |- t2 \in (TArrow T1 (TIO T2)) ->
        Gamma |- tbindIO t1 t2 \in (TIO T2)
+  | T_ReturnS : forall Gamma t T,
+       Gamma |- t \in T ->
+       Gamma |- treturnS t \in (TS T)
+  | T_BindS : forall Gamma t1 t2 T1 T2,
+       Gamma |- t1 \in (TS T1) ->
+       Gamma |- t2 \in (TArrow T1 (TS T2)) ->
+       Gamma |- tbindS t1 t2 \in (TS T2)
+  | T_ZeroS : forall Gamma T,
+       Gamma |- tzeroS T \in (TS T)
+  | T_PlusS : forall Gamma t1 t2 T,
+       Gamma |- t1 \in (TS T) ->
+       Gamma |- t2 \in (TS T) ->
+       Gamma |- tplusS t1 t2 \in (TS T)
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T).
 
@@ -191,7 +222,9 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   | Case_aux c "T_Pair" | Case_aux c "T_Fst" | Case_aux c "T_Snd" 
   | Case_aux c "T_Inl" | Case_aux c "T_Inr" | Case_aux c "T_Case" 
   | Case_aux c "T_Fix"
-  | Case_aux c "T_ReturnIO" | Case_aux c "T_BindIO" ].
+  | Case_aux c "T_ReturnIO" | Case_aux c "T_BindIO" 
+  | Case_aux c "T_ReturnS" | Case_aux c "T_BindS" 
+  | Case_aux c "T_ZeroS" | Case_aux c "T_PlusS" ].
 
 Hint Constructors has_type.
 

@@ -116,6 +116,21 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_bindIO2 : forall x t1 t2,
       appears_free_in x t2 ->
       appears_free_in x (tbindIO t1 t2)
+  | afi_returnS : forall x t,
+      appears_free_in x t ->
+      appears_free_in x (treturnS t)
+  | afi_bindS1 : forall x t1 t2,
+      appears_free_in x t1 ->
+      appears_free_in x (tbindS t1 t2)
+  | afi_bindS2 : forall x t1 t2,
+      appears_free_in x t2 ->
+      appears_free_in x (tbindS t1 t2)
+  | afi_plusS1 : forall x t1 t2,
+      appears_free_in x t1 ->
+      appears_free_in x (tplusS t1 t2)
+  | afi_plusS2 : forall x t1 t2,
+      appears_free_in x t2 ->
+      appears_free_in x (tplusS t1 t2)
   .
 
 Tactic Notation "afi_cases" tactic(first) ident(c) :=
@@ -129,7 +144,11 @@ Tactic Notation "afi_cases" tactic(first) ident(c) :=
   | Case_aux c "afi_case1" | Case_aux c "afi_case2"
   | Case_aux c "afi_case3" | Case_aux c "afi_fix" 
   | Case_aux c "afi_returnIO"
-  | Case_aux c "afi_bindIO1" | Case_aux c "afi_bindIO2" ].
+  | Case_aux c "afi_bindIO1" | Case_aux c "afi_bindIO2"
+  | Case_aux c "afi_returnS"
+  | Case_aux c "afi_bindS1" | Case_aux c "afi_bindS2"
+  | Case_aux c "afi_plusS1" | Case_aux c "afi_plusS2"
+  ].
 
 Hint Constructors appears_free_in.
 
@@ -169,16 +188,12 @@ Proof with eauto.
     (* the only tricky step... the [Gamma'] we use to 
        instantiate is [extend Gamma x T11] *)
     unfold extend. destruct (eq_id_dec x0 x1)... 
-  Case "T_App".
-    apply T_App with T11...
-  Case "T_Fst".
-    apply T_Fst with T2...
-  Case "T_Snd".
-    apply T_Snd with T1...
-  Case "T_Case".
-    apply T_Case with T1 T2...
-  Case "T_BindIO".
-    apply T_BindIO with T1...
+  Case "T_App". apply T_App with T11...
+  Case "T_Fst". apply T_Fst with T2...
+  Case "T_Snd". apply T_Snd with T1...
+  Case "T_Case". apply T_Case with T1 T2...
+  Case "T_BindIO". apply T_BindIO with T1...
+  Case "T_BindS". apply T_BindS with T1...
 Qed.
 
 Lemma substitution_preserves_typing : forall Gamma x U t v T,
@@ -269,8 +284,6 @@ Proof.
    apply (preservation x0 y0). apply Hhas_type. apply H.
    apply Hnf. apply Hnot_val.
 Qed.
-  
-
 
 End SmtenProp.
 
