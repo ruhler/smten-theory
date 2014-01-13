@@ -37,7 +37,6 @@ Hint Constructors stepio.
 Notation multistepio := (multi stepio).
 Notation "t1 '=IO=>*' t2" := (multistepio t1 t2) (at level 40).
 
-
 Theorem progressio : forall t T,
     empty |- t \in T ->
     (exists T1 : ty, T = TIO T1) ->
@@ -74,6 +73,24 @@ Proof with eauto.
      right. destruct IHHt1...
      SCase "t1 is a valueio". inversion H...
      SCase "t1 is tbindio". destruct H as [t3]...
+Qed.
+
+Theorem preservationio : forall t t' T,
+     empty |- t \in T ->
+     t =IO=> t' ->
+     empty |- t' \in T.
+
+Proof with eauto.
+   intros t t' T HT Hstep.
+   generalize dependent T.
+   stepio_cases (induction Hstep) Case; intros T HT; subst...
+   Case "STIO_Pure". apply preservation with t...
+   Case "STIO_BindReturn". 
+     inversion HT. inversion H2.
+     apply T_App with T1...
+   Case "STIO_Bind".
+     inversion HT.
+     apply T_BindIO with T1...
 Qed.
 
 End SmtenIO.
