@@ -1,5 +1,4 @@
 Smten Unfair::
-* prove uniqueness of types
 * prove progress of S1 computation
 * prove preservation of S1
 * prove soundness of S1

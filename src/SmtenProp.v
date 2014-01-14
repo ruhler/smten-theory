@@ -4,6 +4,66 @@ Require Export Smten.
 Module SmtenProp.
 Import Smten.Smten.
 
+Theorem unique_typing : forall Gamma t T1 T2,
+    Gamma |- t \in T1 ->
+    Gamma |- t \in T2 ->
+    T1 = T2 .
+
+Proof with auto.
+  intros Gamma t Ta Tb HTa HTb.
+  generalize dependent Tb.
+  has_type_cases (induction HTa) Case ; intros Tb HTb; inversion HTb.
+  Case "T_Var". rewrite H in H2. injection H2. auto.
+  Case "T_Abs".
+    assert (T12 = T1).
+    apply IHHTa. assumption.
+    rewrite H5. reflexivity.
+  Case "T_App".
+    assert (TArrow T11 T12 = TArrow T0 Tb). apply IHHTa1. assumption.
+    injection H5. auto.
+  Case "T_Unit". reflexivity.
+  Case "T_Pair".
+    f_equal.
+    apply IHHTa1...
+    apply IHHTa2...
+  Case "T_Fst".
+    assert (TProd T1 T2 = TProd Tb T3).
+    apply IHHTa...
+    injection H3...
+  Case "T_Snd".
+    assert (TProd T1 T2 = TProd T0 Tb).
+    apply IHHTa...
+    injection H3...
+  Case "T_Inl".
+    f_equal. 
+    apply IHHTa...
+  Case "T_Inr".
+    f_equal. apply IHHTa...
+  Case "T_Case".
+    assert (TArrow T1 T3 = TArrow T0 Tb)...
+    injection H7...
+  Case "T_Fix".
+    assert (TArrow T T = TArrow Tb Tb)...
+    injection H3...
+  Case "T_ReturnIO".
+    f_equal. apply IHHTa...
+  Case "T_BindIO".
+    f_equal.
+    assert (TArrow T1 (TIO T2) = TArrow T0 (TIO T3))...
+    injection H5...
+  Case "T_ReturnS".
+    f_equal. apply IHHTa...
+  Case "T_BindS".
+    f_equal.
+    assert (TArrow T1 (TS T2) = TArrow T0 (TS T3))...
+    injection H5...
+  Case "T_ZeroS". reflexivity.
+  Case "T_PlusS".
+    f_equal.
+    assert (TS T = TS T0)...
+    injection H5...
+Qed.
+
 Theorem progress : forall t T, 
      empty |- t \in T ->
      value t \/ exists t', t ==> t'.

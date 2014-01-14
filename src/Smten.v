@@ -29,39 +29,6 @@ Fixpoint beq_ty (T1 T2:ty) : bool :=
   | _, _ => false
   end.
 
-Lemma beq_ty_refl : forall T1,
-  beq_ty T1 T1 = true.
-Proof.
-  intros T1.
-  T_cases(induction T1) Case; simpl.
-  Case "TArrow". rewrite IHT1_1. rewrite IHT1_2. reflexivity.
-  Case "TUnit". reflexivity.
-  Case "TProd". rewrite IHT1_1. rewrite IHT1_2. reflexivity.
-  Case "TSum". rewrite IHT1_1. rewrite IHT1_2. reflexivity.
-  Case "TIO". rewrite IHT1. reflexivity.
-  Case "TS". rewrite IHT1. reflexivity.
-Qed.
-
-Lemma beq_ty__eq : forall T1 T2,
-  beq_ty T1 T2 = true -> T1 = T2.
-Proof with auto.
-  intros T1.
-  T_cases(induction T1) Case;
-    intros T2 Hbeq; destruct T2; inversion Hbeq.
-  Case "TArrow".
-    apply andb_true in H0. inversion H0 as [Hbeq1 Hbeq2].
-    apply IHT1_1 in Hbeq1. apply IHT1_2 in Hbeq2. subst...
-  Case "TUnit". reflexivity.
-  Case "TProd".
-    apply andb_true in H0. inversion H0 as [Hbeq1 Hbeq2].
-    apply IHT1_1 in Hbeq1. apply IHT1_2 in Hbeq2. subst...
-  Case "TSum".
-    apply andb_true in H0. inversion H0 as [Hbeq1 Hbeq2].
-    apply IHT1_1 in Hbeq1. apply IHT1_2 in Hbeq2. subst...
-  Case "TIO". apply IHT1 in H0. subst...
-  Case "TS". apply IHT1 in H0. subst...
-Qed.
-
 Inductive tm : Type :=
   | tvar : id -> tm                 (* x *)
   | tapp : tm -> tm -> tm           (* t1 t2 *)
