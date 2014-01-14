@@ -11,7 +11,7 @@ src/Smten.vo: lib/Types.vo
 src/SmtenProp.vo: src/Smten.vo
 src/SmtenS1.vo: src/SmtenProp.vo
 src/SmtenS.vo: src/SmtenS1.vo
-src/SmtenIO.vo: src/SmtenProp.vo
+src/SmtenIO.vo: src/SmtenS.vo
 
 clean:
 	rm lib/*.vo src/*.vo lib/*.glob src/*.glob

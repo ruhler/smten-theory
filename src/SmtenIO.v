@@ -1,10 +1,12 @@
 
 Require Export Smten.
 Require Export SmtenProp.
+Require Export SmtenS.
 
 Module SmtenIO.
 Import Smten.Smten.
 Import SmtenProp.SmtenProp.
+Import SmtenS.SmtenS.
 
 Inductive valueIO : tm -> Prop :=
   | vIO_return : forall t, valueIO (treturnIO t)
@@ -24,13 +26,22 @@ Inductive stepIO : tm -> tm -> Prop :=
   | STIO_Bind : forall t1 t1' t2,
       t1 =IO=> t1' ->
       tbindIO t1 t2 =IO=> tbindIO t1' t2 
+  | STIO_RunReturn : forall t,
+      trunIO (treturnS t) =IO=> treturnIO (tjust t)
+  | STIO_RunZero : forall T,
+      trunIO (tzeroS T) =IO=> treturnIO (tnothing T)
+  | STIO_Run : forall t t',
+      t =S=> t' ->
+      trunIO t =IO=> trunIO t'
 
 where "t1 '=IO=>' t2" := (stepIO t1 t2).
 
 Tactic Notation "stepIO_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "STIO_Pure" | Case_aux c "STIO_BindReturn"
-  | Case_aux c "STIO_Bind" ].
+  | Case_aux c "STIO_Bind" | Case_aux c "STIO_RunReturn"
+  | Case_aux c "STIO_RunZero" | Case_aux c "STIO_Run"
+  ].
 
 Hint Constructors stepIO.
 
@@ -73,6 +84,17 @@ Proof with eauto.
      right. destruct IHHt1...
      SCase "t1 is a valueIO". inversion H...
      SCase "t1 is tbindIO". destruct H as [t3]...
+  Case "T_RunIO".
+     right. destruct (progressS t (TS T))...
+     SCase "t is a valueS".
+       inversion H.
+       SSCase "t is returnS".
+         exists (treturnIO (tjust t0)). apply STIO_RunReturn.
+       SSCase "t is zeroS".
+         exists (treturnIO (tnothing T0)). apply STIO_RunZero.
+     SCase "t steps".
+       inversion H as [t'].
+       exists (trunIO t'). apply STIO_Run. assumption.
   Case "T_ReturnS". inversion HIOt. inversion H.
   Case "T_BindS". inversion HIOt. inversion H.
   Case "T_ZeroS". inversion HIOt. inversion H.
@@ -87,7 +109,7 @@ Theorem preservationIO : forall t t' T,
 Proof with eauto.
    intros t t' T HT Hstep.
    generalize dependent T.
-   stepIO_cases (induction Hstep) Case; intros T HT; subst...
+   stepIO_cases (induction Hstep) Case; intros Tx HT; subst...
    Case "STIO_Pure". apply preservation with t...
    Case "STIO_BindReturn". 
      inversion HT. inversion H2.
@@ -95,6 +117,21 @@ Proof with eauto.
    Case "STIO_Bind".
      inversion HT.
      apply T_BindIO with T1...
+   Case "STIO_RunReturn".
+     inversion HT.
+     apply T_ReturnIO.
+     apply T_Inr.
+     inversion H1. assumption.
+   Case "STIO_RunZero".
+     inversion HT.
+     apply T_ReturnIO.
+     inversion H1.
+     apply T_Inl.
+     apply T_Unit.
+   Case "STIO_Run".
+     inversion HT.
+     apply T_RunIO.
+     apply preservationS with t...
 Qed.
 
 Definition stuckIO (t:tm) : Prop :=

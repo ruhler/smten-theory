@@ -80,6 +80,7 @@ Proof with eauto.
      SCase "tcase steps". right. destruct H as [t4]...
   Case "T_ReturnIO". inversion HSt. inversion H.
   Case "T_BindIO". inversion HSt. inversion H.
+  Case "T_RunIO". inversion HSt. inversion H.
   Case "T_BindS".
      right. destruct IHHt1...
      SCase "t1 is a valueS1". inversion H.

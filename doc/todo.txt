@@ -1,4 +1,3 @@
 Smten Unfair::
-* add runio to pure and io computation, without fairness constraint.
 * state and prove the perseverance theorem (without fairness).
 
