@@ -1,3 +1,9 @@
 Smten Unfair::
-* state and prove the perseverance theorem (without fairness).
+* Prove step deterministic
+* Prove expansion for unsat
+* state and prove the perseverance theorem
+
+Cleanup::
+* factor out common code for stuck and soundness of S1, S, and IO?
+* factor out common code for preservation_multi?
 

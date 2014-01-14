@@ -13,6 +13,10 @@ Inductive valueS : tm -> Prop :=
   | vS_zero : forall T, valueS (tzeroS T)
   .
 
+Tactic Notation "valueS_cases" tactic(first) ident(c) :=
+  first;
+  [ Case_aux c "vS_return" | Case_aux c "vS_zero" ].
+
 Hint Constructors valueS.
 
 Reserved Notation "t1 '=S=>' t2" (at level 40).
@@ -133,6 +137,20 @@ Proof with eauto.
    Case "STS_Plus2". inversion HT...
 Qed.
 
+Theorem preservationS_multi : forall t t' T,
+  empty |- t \in T ->
+  t =S=>* t' ->
+  empty |- t' \in T
+  .
+Proof.
+  intros t t' T HT Hsteps.
+  multi_cases (induction Hsteps) Case.
+  Case "multi_refl". assumption.
+  Case "multi_step". 
+     apply IHHsteps.
+     apply preservationS with x0. assumption. assumption.
+Qed.
+
 Definition stuckS (t:tm) : Prop :=
   (normal_form stepS) t /\ ~ valueS t.
 
@@ -154,5 +172,142 @@ Proof.
    apply Hnf. apply Hnot_val.
 Qed.
 
+Inductive unsat : tm -> Prop :=
+  | Un_Zero : forall T, unsat (tzeroS T)
+  | Un_Step : forall t T,
+      empty |- t \in TS T ->
+      (exists t', t =S=> t') ->
+      (forall t', t =S=> t' -> unsat t') ->
+      unsat t
+  .
+
+Tactic Notation "unsat_cases" tactic(first) ident(c) :=
+  first;
+  [ Case_aux c "Un_Zero" | Case_aux c "Un_Step" ].
+
+Hint Constructors unsat.
+
+Theorem unsat_goes_zero : forall t T,
+  empty |- t \in TS T ->
+  unsat t ->
+  t =S=>* tzeroS T
+  .
+Proof.
+  intros t T HT Hunsat.
+  unsat_cases (induction Hunsat) Case.
+  Case "Un_Zero".
+    inversion HT.
+    apply multi_refl.
+  Case "Un_Step".
+    destruct (progressS t (TS T)). assumption.
+    exists T. reflexivity.
+    SCase "t is a valueS".
+      valueS_cases (inversion H3) SSCase.
+      SSCase "vS_return".
+        inversion H0.
+        rewrite <- H4 in H5.
+        inversion H5. inversion H6. inversion H9.      
+      SSCase "vS_zero".
+        rewrite <- H4 in HT.
+        inversion HT.
+        apply multi_refl.
+    SCase "t steps".
+      inversion H3 as [t1].
+      apply multi_step with t1. assumption.
+      apply H2. assumption. apply preservationS with t.
+      assumption. assumption.
+Qed.
+
+Theorem unsat_preserves : forall t t' T,
+  empty |- t \in TS T ->
+  unsat t ->
+  t =S=> t' ->
+  unsat t'
+  .
+Proof.
+  intros t t' T HT Hunsat Hstep.
+  unsat_cases (inversion Hunsat) Case.
+  Case "Un_Zero".
+    rewrite <- H in Hstep.
+    inversion Hstep.
+    inversion H0.
+    inversion H3.
+  Case "Un_Step".
+    apply H1.
+    assumption.
+Qed.
+
+Theorem unsat_preserves_multi : forall t t' T,
+  empty |- t \in TS T ->
+  unsat t ->
+  t =S=>* t' ->
+  unsat t'
+  .
+Proof.
+  intros t t' T HT Hunsat Hsteps.
+  multi_cases (induction Hsteps) Case.
+  Case "multi_refl". assumption.
+  Case "multi_step". 
+     apply IHHsteps.
+     apply preservationS with x0. assumption. assumption.
+     apply unsat_preserves with x0 T. assumption. assumption.
+     assumption.
+Qed.
+
+Theorem unsat_goes_only_zero : forall t tv T,
+  empty |- t \in TS T ->
+  unsat t ->
+  t =S=>* tv ->
+  valueS tv ->
+  tv = tzeroS T
+  .
+Proof.
+  intros t tv T HT Hunsat Hsteps Hval.
+  assert (unsat tv).
+  apply unsat_preserves_multi with t T.
+  assumption. assumption. assumption.
+  valueS_cases (destruct Hval) Case.
+  Case "vS_return".
+    inversion H.
+    inversion H1. inversion H4. inversion H5. inversion H8.
+  Case "vS_zero".
+    f_equal.
+    assert (empty |- tzeroS T0 \in TS T).
+    apply preservationS_multi with t.
+    assumption. assumption.
+    inversion H0. reflexivity.
+Qed.
+    
+
+(* 
+    Theorem unsat_expands : forall t t' T,
+      empty |- t \in TS T ->
+      unsat t' ->
+      t =S=> t' ->
+      unsat t
+      .
+    Proof.
+      intros t t' T HT Hunsat Hstep.
+      apply Un_Step with T. assumption.
+      exists t'. assumption.
+      t_cases (destruct t) Case.
+      Case "tvar". inversion Hstep. inversion H. inversion H2.
+      Case "tapp".
+        inversion Hstep. inversion H.
+
+      stepS_cases (inversion Hstep) Case.
+      Case "STS_STS1".
+        stepS1_cases (inversion H) SCase.
+        SCase "STS1_Pure".
+
+
+      intros t1 Hstep1.
+      stepS_cases (inversion Hstep1) Case.
+      Case "STS_STS1".
+        stepS1_cases (inversion H) SCase.
+        SCase "STS1_Pure".
+          
+*)
+  
 End SmtenS.
 
