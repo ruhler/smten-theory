@@ -1,8 +1,4 @@
 Smten Unfair::
-* prove progress of S
-* prove preservation of S
-* prove soundness of S
-
 * add runio to pure and io computation, without fairness constraint.
 * state and prove the perseverance theorem (without fairness).
 
