@@ -354,5 +354,92 @@ Proof.
    apply Hnf. apply Hnot_val.
 Qed.
 
+Theorem step_deterministic : forall t t1 t2 T,
+   empty |- t \in T ->
+   t ==> t1 ->
+   t ==> t2 ->
+   t1 = t2
+   .
+Proof.
+  intro t.
+  t_cases (induction t) Case;
+    intros ty1 ty2 T HT Hstep1 Hstep2 ; inversion Hstep1.
+  Case "tapp".
+    SCase "tf = tabs x0 T0 t0".
+      rewrite <- H0 in Hstep2.
+      inversion Hstep2.
+      SSCase "tf = tabs x0 T0 t0". reflexivity.
+      SSCase "tf steps". inversion H5.
+    SCase "tf steps".
+      inversion Hstep2.
+      SSCase "tf = tabs".
+         rewrite <- H4 in H2.
+         inversion H2.
+      SSCase "tf steps".
+         f_equal.
+         inversion HT.
+         apply IHt1 with (TArrow T11 T).
+         assumption. assumption. assumption.
+    Case "tfst". 
+      SCase "fst pair".
+        rewrite <- H0 in Hstep2.
+        rewrite H1 in Hstep2.
+        inversion Hstep2.
+        SSCase "fst pair". reflexivity.
+        SSCase "fst". inversion H2. 
+      SCase "fst".
+        inversion Hstep2.
+        SSCase "fst pair".
+          rewrite <- H3 in H0.
+          inversion H0.
+        SSCase "fst".
+          f_equal.
+          inversion HT.
+          apply IHt with (TProd T T2).
+          assumption. assumption. assumption.
+    Case "tsnd". 
+      SCase "snd pair".
+        rewrite <- H0 in Hstep2.
+        rewrite H1 in Hstep2.
+        inversion Hstep2.
+        SSCase "snd pair". reflexivity.
+        SSCase "snd". inversion H2. 
+      SCase "snd".
+        inversion Hstep2.
+        SSCase "snd pair".
+          rewrite <- H3 in H0.
+          inversion H0.
+        SSCase "snd".
+          f_equal.
+          inversion HT.
+          apply IHt with (TProd T1 T).
+          assumption. assumption. assumption.
+   Case "tcase".
+      SCase "case inl".
+        rewrite <- H0 in Hstep2.
+        inversion Hstep2.
+        SSCase "case inl". reflexivity.
+        SSCase "case". inversion H7.
+      SCase "case inr".
+        rewrite <- H0 in Hstep2.
+        inversion Hstep2.
+        SSCase "case inr". reflexivity.
+        SSCase "case". inversion H7.
+      SCase "case".
+        inversion Hstep2.
+        SSCase "case inl".
+          rewrite <- H5 in H3. inversion H3.
+        SSCase "case inr".
+          rewrite <- H5 in H3. inversion H3.
+        SSCase "case".
+          f_equal.
+          inversion HT.
+          apply IHt1 with (TSum T1 T2).
+          assumption. assumption. assumption.
+   Case "tfix".
+     inversion Hstep2.
+     reflexivity.
+Qed.
+
 End SmtenProp.
 

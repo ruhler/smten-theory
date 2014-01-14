@@ -1,5 +1,4 @@
 Smten Unfair::
-* Prove step deterministic
 * Prove expansion for unsat
 * state and prove the perseverance theorem
 
