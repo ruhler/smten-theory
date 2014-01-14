@@ -18,17 +18,6 @@ Tactic Notation "T_cases" tactic(first) ident(c) :=
   | Case_aux c "TUnit" | Case_aux c "TProd" | Case_aux c "TSum" 
   | Case_aux c "TIO" | Case_aux c "TS" ].
 
-Fixpoint beq_ty (T1 T2:ty) : bool :=
-  match T1,T2 with
-  | TArrow T11 T12, TArrow T21 T22 => andb (beq_ty T11 T21) (beq_ty T12 T22)
-  | TUnit, TUnit => true
-  | TProd T11 T12, TProd T21 T22 => andb (beq_ty T11 T21) (beq_ty T12 T22)
-  | TSum T11 T12, TSum T21 T22 => andb (beq_ty T11 T21) (beq_ty T12 T22)
-  | TIO T11, TIO T21 => beq_ty T11 T21
-  | TS T11, TS T21 => beq_ty T11 T21
-  | _, _ => false
-  end.
-
 Inductive tm : Type :=
   | tvar : id -> tm                 (* x *)
   | tapp : tm -> tm -> tm           (* t1 t2 *)
