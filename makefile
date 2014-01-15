@@ -3,6 +3,7 @@ default: src/SmtenIO.vo src/SmtenS.vo
 
 %.vo: %.v
 	coqc -I lib -I src $<
+	#coqtop -I lib -I src < $<
 
 lib/Types.vo: lib/Smallstep.vo
 lib/Smallstep.vo: lib/Imp.vo
