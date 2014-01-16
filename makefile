@@ -1,5 +1,5 @@
 
-default: src/SmtenIO.vo src/SmtenS.vo
+default: src/SmtenIO.vo src/SmtenS.vo src/Sat.vo
 
 %.vo: %.v
 	coqc -I lib -I src $<
@@ -13,6 +13,7 @@ src/SmtenProp.vo: src/Smten.vo
 src/SmtenS1.vo: src/SmtenProp.vo
 src/SmtenS.vo: src/SmtenS1.vo
 src/SmtenIO.vo: src/SmtenS.vo
+src/Sat.vo: lib/SfLib.vo
 
 clean:
 	rm lib/*.vo src/*.vo lib/*.glob src/*.glob
