@@ -1,8 +1,8 @@
-Smten Unfair::
-* Prove expansion for unsat
-* state and prove the perseverance theorem
-
 Cleanup::
+* pull unsat_plus_unsat_zero into unsat_plus proof
 * factor out common code for stuck and soundness of S1, S, and IO?
-* factor out common code for preservation_multi?
+* factor out common code for preservation_multi, unsat_preserves_multi,
+  unsat_expands_multi?
+* eliminate Admitted everywhere in the library for theorems I use.
+* Reduce the library to just those things I use.
 
