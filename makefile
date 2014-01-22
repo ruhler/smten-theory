@@ -1,5 +1,5 @@
 
-default: src/SmtenIO.vo src/SmimplIO.vo src/Sat.vo
+default: src/SmtenIO.vo src/Smimpl.vo
 
 %.vo: %.v
 	coqc -I lib -I src $<
@@ -12,7 +12,7 @@ src/SmtenS.vo: src/SmtenS1.vo
 src/SmtenIO.vo: src/SmtenS.vo
 src/Sat.vo: lib/SfLib.vo
 
-src/Smimpl.vo: lib/SfLib.vo
+src/Smimpl.vo: lib/SfLib.vo src/Sat.vo
 src/SmimplProp.vo: lib/Smallstep.vo src/Smimpl.vo
 src/SmimplS1.vo: src/SmimplProp.vo
 src/SmimplS.vo: src/SmimplS1.vo

@@ -40,12 +40,18 @@ Proof with auto.
     apply IHHTa...
   Case "T_Inr".
     f_equal. apply IHHTa...
+  Case "T_Sum".
+    f_equal.
+    apply IHHTa1. assumption.
+    apply IHHTa2. assumption.
   Case "T_Case".
     assert (TArrow T1 T3 = TArrow T0 Tb)...
     injection H7...
   Case "T_Fix".
     assert (TArrow T T = TArrow Tb Tb)...
     injection H3...
+  Case "T_Ite".
+    apply IHHTa1. assumption.
   Case "T_ReturnIO".
     f_equal. apply IHHTa...
   Case "T_BindIO".
@@ -57,6 +63,7 @@ Proof with auto.
     assert (TS T = TS T0)...
     injection H3. intro.
     rewrite H4. reflexivity.
+  Case "T_IteIO". apply IHHTa1. assumption. 
   Case "T_ReturnS".
     f_equal. apply IHHTa...
   Case "T_BindS".
@@ -68,6 +75,11 @@ Proof with auto.
     f_equal.
     assert (TS T = TS T0)...
     injection H5...
+  Case "T_SetS". 
+    f_equal.
+    apply IHHTa. assumption.
+  Case "T_IteS".
+    apply IHHTa1. assumption.
 Qed.
 
 Theorem progress : forall t T, 
@@ -90,6 +102,8 @@ Proof with eauto.
     SCase "t1 is a value".
       v_cases (inversion H) SSCase; subst; try solve by inversion.
       SSCase "v_abs". exists ([x0:=t2]t)...
+      SSCase "v_IO". inversion H0; subst; try solve by inversion.
+      SSCase "v_S". inversion H0; subst; try solve by inversion.
  
     SCase "t1 steps".
       inversion H as [t1' Hstp]. exists (tapp t1' t2)...
@@ -102,6 +116,8 @@ Proof with eauto.
          be a pair *)
       v_cases (inversion H) SSCase; subst; try solve by inversion.
       SSCase "v_pair". eauto.
+      SSCase "v_IO". inversion H0; subst; try solve by inversion.
+      SSCase "v_S". inversion H0; subst; try solve by inversion.
 
 
     SCase "t also steps".
@@ -115,6 +131,8 @@ Proof with eauto.
          be a pair *)
       v_cases (inversion H) SSCase; subst; try solve by inversion.
       SSCase "v_pair". eauto.
+      SSCase "v_IO". inversion H0; subst; try solve by inversion.
+      SSCase "v_S". inversion H0; subst; try solve by inversion.
 
     SCase "t also steps".
       inversion H as [t' Hstp]. exists (tsnd t')...
@@ -124,11 +142,76 @@ Proof with eauto.
 
     SCase "t1 is a value".
       v_cases (inversion H) SSCase; subst; try solve by inversion.
-      SSCase "v_inl". eauto.
-      SSCase "v_inr". eauto.
+      SSCase "v_sum". eauto.
+      SSCase "v_IO". inversion H0; subst; try solve by inversion.
+      SSCase "v_S". inversion H0; subst; try solve by inversion.
 
     SCase "t1 also steps".
       inversion H as [t1' Hstp]. exists (tcase t1' t2 t3)...
+ 
+  Case "T_Ite".
+    right. destruct IHHt1...
+
+    SCase "t1 is a value".
+      destruct IHHt2...
+      SSCase "t2 is a value".
+        v_cases (inversion H) SSSCase.
+        SSSCase "v_abs".
+           v_cases (inversion H0) SSSSCase;
+              subst ; inversion Ht2 ; subst ; inversion Ht1 ; try (inversion H2).
+           SSSSCase "v_abs".
+             subst.
+             exists (tabs x T1 (tite p (tapp (tabs x0 T1 t) (tvar x)) (tapp (tabs x1 T1 t0) (tvar x)))).
+             apply ST_IteAbs.
+        SSSCase "v_unit".
+           v_cases (inversion H0) SSSSCase;
+             subst ; inversion Ht2 ; subst ; inversion Ht1 ; try (inversion H2).
+           SSSSCase "v_unit".
+             exists tunit. apply ST_IteUnit.
+        SSSCase "v_pair".
+           v_cases (inversion H0) SSSSCase;
+             subst ; inversion Ht2 ; subst ; inversion Ht1 ; try (inversion H2).
+           SSSSCase "v_pair". subst.
+             exists (tpair (tite p t0 t4) (tite p t3 t5)).
+             apply ST_ItePair.
+        SSSCase "v_sum".
+           v_cases (inversion H0) SSSSCase;
+             subst ; inversion Ht2 ; subst ; inversion Ht1 ; try (inversion H2).
+           SSSSCase "v_sum". subst.
+             exists (tsum (Sat.fite p p0 p1) (tite p t0 t4) (tite p t3 t5)).
+             apply ST_IteSum.
+        SSSCase "v_IO".
+           v_cases (inversion H0) SSSSCase.
+           SSSSCase "v_abs". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
+           SSSSCase "v_unit". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
+           SSSSCase "v_pair". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
+           SSSSCase "v_sum". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
+           SSSSCase "v_IO".
+             exists (titeIO p t1 t2). apply ST_IteIO; assumption.
+           SSSSCase "v_S".
+             inversion H1; subst;
+             inversion H3; subst;
+             inversion Ht1; subst ; inversion Ht2.
+        SSSCase "v_S".
+           v_cases (inversion H0) SSSSCase.
+           SSSSCase "v_abs". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
+           SSSSCase "v_unit". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
+           SSSSCase "v_pair". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
+           SSSSCase "v_sum". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
+           SSSSCase "v_IO".
+             inversion H1; subst;
+             inversion H3; subst;
+             inversion Ht1; subst ; inversion Ht2.
+           SSSSCase "v_S".
+             exists (titeS p t1 t2). apply ST_IteS; assumption.
+      SSCase "t2 steps".
+        inversion H0 as [t2'].
+        exists (tite p t1 t2').
+        apply ST_Ite2; assumption.
+    SCase "t1 steps".
+      inversion H as [t1'].
+      exists (tite p t1' t2).
+      apply ST_Ite1; assumption.
 
 Qed.
 
@@ -161,6 +244,12 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_inr : forall x T t,
       appears_free_in x t ->
       appears_free_in x (tinr T t)
+  | afi_sum1 : forall x p t1 t2,
+      appears_free_in x t1 ->
+      appears_free_in x (tsum p t1 t2)
+  | afi_sum2 : forall x p t1 t2,
+      appears_free_in x t2 ->
+      appears_free_in x (tsum p t1 t2)
   | afi_case1 : forall x t1 t2 t3,
       appears_free_in x t1 ->
       appears_free_in x (tcase t1 t2 t3)
@@ -173,6 +262,12 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_fix : forall x t,
       appears_free_in x t ->
       appears_free_in x (tfix t)
+  | afi_ite1 : forall x p t1 t2,
+      appears_free_in x t1 ->
+      appears_free_in x (tite p t1 t2)
+  | afi_ite2 : forall x p t1 t2,
+      appears_free_in x t2 ->
+      appears_free_in x (tite p t1 t2)
   | afi_returnIO : forall x t,
       appears_free_in x t ->
       appears_free_in x (treturnIO t)
@@ -185,6 +280,12 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_runIO : forall x t,
       appears_free_in x t ->
       appears_free_in x (trunIO t)
+  | afi_iteIO1 : forall x p t1 t2,
+      appears_free_in x t1 ->
+      appears_free_in x (titeIO p t1 t2)
+  | afi_iteIO2 : forall x p t1 t2,
+      appears_free_in x t2 ->
+      appears_free_in x (titeIO p t1 t2)
   | afi_returnS : forall x t,
       appears_free_in x t ->
       appears_free_in x (treturnS t)
@@ -200,6 +301,15 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_plusS2 : forall x t1 t2,
       appears_free_in x t2 ->
       appears_free_in x (tplusS t1 t2)
+  | afi_setS : forall x p t,
+      appears_free_in x t ->
+      appears_free_in x (tsetS p t)
+  | afi_iteS1 : forall x p t1 t2,
+      appears_free_in x t1 ->
+      appears_free_in x (titeS p t1 t2)
+  | afi_iteS2 : forall x p t1 t2,
+      appears_free_in x t2 ->
+      appears_free_in x (titeS p t1 t2)
   .
 
 Tactic Notation "afi_cases" tactic(first) ident(c) :=
@@ -210,14 +320,19 @@ Tactic Notation "afi_cases" tactic(first) ident(c) :=
   | Case_aux c "afi_pair1" | Case_aux c "afi_pair2"
   | Case_aux c "afi_fst" | Case_aux c "afi_snd" 
   | Case_aux c "afi_inl" | Case_aux c "afi_inr"
+  | Case_aux c "afi_sum1" | Case_aux c "afi_sum2"
   | Case_aux c "afi_case1" | Case_aux c "afi_case2"
   | Case_aux c "afi_case3" | Case_aux c "afi_fix" 
+  | Case_aux c "afi_ite1" | Case_aux c "afi_ite2"
   | Case_aux c "afi_returnIO"
   | Case_aux c "afi_bindIO1" | Case_aux c "afi_bindIO2"
   | Case_aux c "afi_runIO"
+  | Case_aux c "afi_iteIO1" | Case_aux c "afi_iteIO2"
   | Case_aux c "afi_returnS"
   | Case_aux c "afi_bindS1" | Case_aux c "afi_bindS2"
   | Case_aux c "afi_plusS1" | Case_aux c "afi_plusS2"
+  | Case_aux c "afi_setS"
+  | Case_aux c "afi_iteS1" | Case_aux c "afi_iteS2"
   ].
 
 Hint Constructors appears_free_in.
@@ -240,6 +355,21 @@ Proof.
     apply IHappears_free_in in H7.
     rewrite extend_neq in H7; assumption.
 Qed.
+
+Lemma closed_typing : forall t T,
+  empty |- t \in T ->
+  closed t.
+Proof.
+  intros t T HT.
+  unfold closed.
+  intro x.
+  unfold not.
+  intro Hafi.
+  absurd (exists (T':ty), empty x = Some T').
+  unfold not. intro Hsilly. inversion Hsilly. inversion H.
+  apply free_in_context with t T; assumption.
+Qed.
+  
 
 Lemma context_invariance : forall Gamma Gamma' t T,
      Gamma |- t \in T  ->
@@ -330,9 +460,49 @@ Proof with eauto.
   Case "T_Case".
     inversion HE; subst...
     SCase "inl". inversion HT1; subst...
-    SCase "inr". inversion HT1; subst...
   Case "T_Fix".
     inversion HE; subst...
+  Case "T_Ite".
+    inversion HE; subst...
+    SCase "tabs".
+      inversion HT1; subst...
+      apply T_Abs.
+      apply T_Ite.
+      apply T_App with T0.
+      apply context_invariance with empty.
+      assumption.
+      intros x0 Hfree.
+      absurd (appears_free_in x0 (tabs x1 T0 t0)).
+      assert (closed (tabs x1 T0 t0)).
+      apply closed_typing with (TArrow T0 T12) ; assumption.
+      unfold closed in H.
+      specialize H with x0. apply H.
+      apply Hfree.
+      apply T_Var. auto.
+
+      apply T_App with T0.
+      apply context_invariance with empty.
+      assumption.
+      intros x0 Hfree.
+      absurd (appears_free_in x0 (tabs x2 T0 t3)).
+      assert (closed (tabs x2 T0 t3)).
+      apply closed_typing with (TArrow T0 T12) ; assumption.
+      unfold closed in H.
+      specialize H with x0. apply H.
+      apply Hfree.
+      apply T_Var. auto.
+    SCase "tpair".
+      inversion HT2; subst; inversion HT1; subst.
+      apply T_Pair.
+      apply T_Ite ; assumption.
+      apply T_Ite ; assumption.
+    SCase "tsum".
+      inversion HT2; subst; inversion HT1; subst.
+      apply T_Sum; apply T_Ite ; assumption.
+    SCase "io".
+      destruct H3; inversion HT1; subst ; apply T_IteIO ; assumption.
+    SCase "s".
+      destruct H3; inversion HT1; subst ; apply T_IteS ; assumption.
 Qed.
 
 Definition stuck (t:tm) : Prop :=

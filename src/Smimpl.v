@@ -78,6 +78,7 @@ Inductive svalue : tm -> Prop :=
   | sv_bindS : forall t1 t2, svalue (tbindS t1 t2)
   | sv_zeroS : forall T, svalue (tzeroS T)
   | sv_plusS : forall t1 t2, svalue (tplusS t1 t2)
+  | sv_setS : forall p t, svalue (tsetS p t)
   | sv_iteS : forall p t1 t2, svalue (titeS p t1 t2)
   .
 
@@ -85,7 +86,7 @@ Tactic Notation "sv_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "sv_returnS" | Case_aux c "sv_bindS"
   | Case_aux c "sv_zeroS" | Case_aux c "sv_plusS"
-  | Case_aux c "sv_iteS"
+  | Case_aux c "sv_setS" | Case_aux c "sv_iteS"
   ].
 
 Hint Constructors svalue.
