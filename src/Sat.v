@@ -20,6 +20,9 @@ Inductive formula : Type :=
 Tactic Notation "formula_cases" tactic(first) ident(c) :=
   first; [ Case_aux c "fval" | Case_aux c "fvar" | Case_aux c "fite" ].  
 
+Notation ftrue := (fval btrue).
+Notation ffalse := (fval bfalse).
+
 Definition x := (Id 0).
 Definition y := (Id 1).
 Definition z := (Id 2).
