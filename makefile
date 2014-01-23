@@ -14,8 +14,7 @@ src/Sat.vo: lib/SfLib.vo
 
 src/Smimpl.vo: lib/SfLib.vo src/Sat.vo
 src/SmimplProp.vo: lib/Smallstep.vo src/Smimpl.vo
-src/SmimplS1.vo: src/SmimplProp.vo
-src/SmimplS.vo: src/SmimplS1.vo
+src/SmimplS.vo: src/Smimpl.vo
 src/SmimplIO.vo: src/SmimplS.vo
 
 clean:
