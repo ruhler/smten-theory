@@ -585,22 +585,20 @@ Proof.
           inversion HT.
           apply IHt with (TProd T1 T).
           assumption. assumption. assumption.
+   Case "tinl".
+      subst.
+      inversion Hstep2.
+      reflexivity.
+   Case "tinr". inversion Hstep2. reflexivity.
    Case "tcase".
-      SCase "case inl".
+      SCase "case sum".
         rewrite <- H0 in Hstep2.
         inversion Hstep2.
         SSCase "case inl". reflexivity.
         SSCase "case". inversion H7.
-      SCase "case inr".
-        rewrite <- H0 in Hstep2.
-        inversion Hstep2.
-        SSCase "case inr". reflexivity.
-        SSCase "case". inversion H7.
       SCase "case".
         inversion Hstep2.
-        SSCase "case inl".
-          rewrite <- H5 in H3. inversion H3.
-        SSCase "case inr".
+        SSCase "case sum".
           rewrite <- H5 in H3. inversion H3.
         SSCase "case".
           f_equal.
@@ -610,6 +608,102 @@ Proof.
    Case "tfix".
      inversion Hstep2.
      reflexivity.
+   Case "tite".
+     SCase "tite1".
+       inversion HT. subst.
+       inversion Hstep2 ; subst.
+       SSCase "tite1".
+         f_equal. subst.
+         apply IHt1 with T ; assumption.
+       SSCase "tite2".
+         inversion H4 ; subst.
+         SSSCase "abs". inversion H3.
+         SSSCase "unit". inversion H3.
+         SSSCase "pair". inversion H3.
+         SSSCase "sum". inversion H3.
+         SSSCase "io". inversion H ; subst ; inversion H3.
+         SSSCase "s". inversion H ; subst ; inversion H3.
+       SSCase "ite abs". inversion H3.
+       SSCase "ite unit". inversion H3.
+       SSCase "ite pair". inversion H3.
+       SSCase "ite sum". inversion H3.
+       SSCase "ite IO". inversion H4 ; subst ; inversion H3.
+       SSCase "ite S". inversion H4 ; subst ; inversion H3.
+     SCase "tite2".
+       inversion HT. subst.
+       inversion Hstep2 ; subst.
+       SSCase "tite1".
+         inversion H3 ; subst.
+         SSSCase "abs". inversion H5.
+         SSSCase "unit". inversion H5.
+         SSSCase "pair". inversion H5.
+         SSSCase "sum". inversion H5.
+         SSSCase "io". inversion H ; subst ; inversion H5.
+         SSSCase "s". inversion H ; subst ; inversion H5.
+       SSCase "tite2".
+         f_equal.
+         apply IHt2 with T ; assumption.
+       SSCase "ite abs". inversion H4.
+       SSCase "ite unit". inversion H4.
+       SSCase "ite pair". inversion H4.
+       SSCase "ite sum". inversion H4.
+       SSCase "ite IO". inversion H6 ; subst ; inversion H4.
+       SSCase "ite S". inversion H6 ; subst ; inversion H4.
+     SCase "ite abs".
+       subst.
+       inversion Hstep2 ; subst.
+       SSCase "ite1". inversion H3.
+       SSCase "ite2". inversion H4.
+       SSCase "ite abs". reflexivity.
+       SSCase "ite io". inversion H3.
+       SSCase "ite s". inversion H3.
+     SCase "ite unit".
+       subst.
+       inversion Hstep2 ; subst.
+       SSCase "ite1". inversion H3.
+       SSCase "ite2". inversion H4.
+       SSCase "ite unit". reflexivity.
+       SSCase "ite io". inversion H3.
+       SSCase "ite s". inversion H3.
+     SCase "ite pair".
+       subst.
+       inversion Hstep2 ; subst.
+       SSCase "ite1". inversion H3.
+       SSCase "ite2". inversion H4.
+       SSCase "ite pair". reflexivity.
+       SSCase "ite io". inversion H3.
+       SSCase "ite s". inversion H3.
+     SCase "ite sum".
+       subst.
+       inversion Hstep2 ; subst.
+       SSCase "ite1". inversion H3.
+       SSCase "ite2". inversion H4.
+       SSCase "ite sum". reflexivity.
+       SSCase "ite io". inversion H3.
+       SSCase "ite s". inversion H3.
+     SCase "ite io".
+       subst.
+       inversion Hstep2 ; subst.
+       SSCase "ite1". inversion H3 ; subst ; inversion H5.
+       SSCase "ite2". inversion H4 ; subst ; inversion H6.
+       SSCase "ite abs". inversion H3.
+       SSCase "ite unit". inversion H3.
+       SSCase "ite pair". inversion H4.
+       SSCase "ite sum". inversion H4.
+       SSCase "ite io". reflexivity.
+       SSCase "ite s". inversion H3 ; subst ; inversion H5.
+     SCase "ite s".
+       subst.
+       inversion Hstep2 ; subst.
+       SSCase "ite1". inversion H3 ; subst ; inversion H5.
+       SSCase "ite2". inversion H4 ; subst ; inversion H6.
+       SSCase "ite abs". inversion H3.
+       SSCase "ite unit". inversion H3.
+       SSCase "ite pair". inversion H4.
+       SSCase "ite sum". inversion H4.
+       SSCase "ite io". inversion H3 ; subst ; inversion H5.
+       SSCase "ite s". reflexivity.
+   
 Qed.
 
 End SmimplProp.
