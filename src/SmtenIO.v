@@ -26,21 +26,21 @@ Inductive stepIO : tm -> tm -> Prop :=
   | STIO_Bind : forall t1 t1' t2,
       t1 =IO=> t1' ->
       tbindIO t1 t2 =IO=> tbindIO t1' t2 
-  | STIO_RunReturn : forall t,
-      trunIO (treturnS t) =IO=> treturnIO (tjust t)
-  | STIO_RunZero : forall T,
-      trunIO (tzeroS T) =IO=> treturnIO (tnothing T)
-  | STIO_Run : forall t t',
+  | STIO_SearchReturn : forall t,
+      tsearchIO (treturnS t) =IO=> treturnIO (tjust t)
+  | STIO_SearchZero : forall T,
+      tsearchIO (tzeroS T) =IO=> treturnIO (tnothing T)
+  | STIO_Search : forall t t',
       t =S=> t' ->
-      trunIO t =IO=> trunIO t'
+      tsearchIO t =IO=> tsearchIO t'
 
 where "t1 '=IO=>' t2" := (stepIO t1 t2).
 
 Tactic Notation "stepIO_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "STIO_Pure" | Case_aux c "STIO_BindReturn"
-  | Case_aux c "STIO_Bind" | Case_aux c "STIO_RunReturn"
-  | Case_aux c "STIO_RunZero" | Case_aux c "STIO_Run"
+  | Case_aux c "STIO_Bind" | Case_aux c "STIO_SearchReturn"
+  | Case_aux c "STIO_SearchZero" | Case_aux c "STIO_Search"
   ].
 
 Hint Constructors stepIO.
@@ -84,17 +84,17 @@ Proof with eauto.
      right. destruct IHHt1...
      SCase "t1 is a valueIO". inversion H...
      SCase "t1 is tbindIO". destruct H as [t3]...
-  Case "T_RunIO".
+  Case "T_SearchIO".
      right. destruct (progressS t (TS T))...
      SCase "t is a valueS".
        inversion H.
        SSCase "t is returnS".
-         exists (treturnIO (tjust t0)). apply STIO_RunReturn.
+         exists (treturnIO (tjust t0)). apply STIO_SearchReturn.
        SSCase "t is zeroS".
-         exists (treturnIO (tnothing T0)). apply STIO_RunZero.
+         exists (treturnIO (tnothing T0)). apply STIO_SearchZero.
      SCase "t steps".
        inversion H as [t'].
-       exists (trunIO t'). apply STIO_Run. assumption.
+       exists (tsearchIO t'). apply STIO_Search. assumption.
   Case "T_ReturnS". inversion HIOt. inversion H.
   Case "T_BindS". inversion HIOt. inversion H.
   Case "T_ZeroS". inversion HIOt. inversion H.
@@ -117,20 +117,20 @@ Proof with eauto.
    Case "STIO_Bind".
      inversion HT.
      apply T_BindIO with T1...
-   Case "STIO_RunReturn".
+   Case "STIO_SearchReturn".
      inversion HT.
      apply T_ReturnIO.
      apply T_Inr.
      inversion H1. assumption.
-   Case "STIO_RunZero".
+   Case "STIO_SearchZero".
      inversion HT.
      apply T_ReturnIO.
      inversion H1.
      apply T_Inl.
      apply T_Unit.
-   Case "STIO_Run".
+   Case "STIO_Search".
      inversion HT.
-     apply T_RunIO.
+     apply T_SearchIO.
      apply preservationS with t...
 Qed.
 

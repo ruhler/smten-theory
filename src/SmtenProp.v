@@ -52,7 +52,7 @@ Proof with auto.
     f_equal.
     assert (TArrow T1 (TIO T2) = TArrow T0 (TIO T3))...
     injection H5...
-  Case "T_RunIO".
+  Case "T_SearchIO".
     f_equal.
     assert (TS T = TS T0)...
     injection H3. intro.
@@ -182,9 +182,9 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_bindIO2 : forall x t1 t2,
       appears_free_in x t2 ->
       appears_free_in x (tbindIO t1 t2)
-  | afi_runIO : forall x t,
+  | afi_searchIO : forall x t,
       appears_free_in x t ->
-      appears_free_in x (trunIO t)
+      appears_free_in x (tsearchIO t)
   | afi_returnS : forall x t,
       appears_free_in x t ->
       appears_free_in x (treturnS t)
@@ -214,7 +214,7 @@ Tactic Notation "afi_cases" tactic(first) ident(c) :=
   | Case_aux c "afi_case3" | Case_aux c "afi_fix" 
   | Case_aux c "afi_returnIO"
   | Case_aux c "afi_bindIO1" | Case_aux c "afi_bindIO2"
-  | Case_aux c "afi_runIO"
+  | Case_aux c "afi_searchIO"
   | Case_aux c "afi_returnS"
   | Case_aux c "afi_bindS1" | Case_aux c "afi_bindS2"
   | Case_aux c "afi_plusS1" | Case_aux c "afi_plusS2"

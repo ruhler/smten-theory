@@ -88,7 +88,7 @@ Proof with eauto.
      SCase "tcase steps". right. destruct H as [t4]...
   Case "T_ReturnIO". inversion HSt. inversion H.
   Case "T_BindIO". inversion HSt. inversion H.
-  Case "T_RunIO". inversion HSt. inversion H.
+  Case "T_SearchIO". inversion HSt. inversion H.
   Case "T_BindS".
      right. destruct (progressS1 t1 (TS T1))...
      SCase "t1 is a valueS1".
@@ -540,7 +540,7 @@ Proof.
   Case "tfix". sts1_det (tfix t) t' T.
   Case "treturnIO". sts1_det (treturnIO t) t' T.
   Case "tbindIO". sts1_det (tbindIO t1 t2) t' T.
-  Case "trunIO". sts1_det (trunIO t) t' T.
+  Case "tsearchIO". sts1_det (tsearchIO t) t' T.
   Case "treturnS". sts1_det (treturnS t) t' T.
   Case "tbindS". sts1_det (tbindS t1 t2) t' T.
   Case "tzeroS". sts1_det (tzeroS t) t' T.
