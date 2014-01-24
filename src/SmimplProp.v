@@ -90,21 +90,26 @@ Proof with eauto.
   intros t T Ht.
   remember (@empty ty) as Gamma.
   has_type_cases (induction Ht) Case; subst Gamma...
-  Case "T_Var".
-    (* contradictory: variables cannot be typed in an 
-       empty context *)
-    inversion H. 
+  Case "T_Var".  (* contradictory: variables cannot be typed in an empty context *)
+    unfold empty in H. discriminate H.
 
   Case "T_App". 
-    (* [t] = [t1 t2].  Proceed by cases on whether [t1] is a 
-       value or steps... *)
-    right. destruct IHHt1...
+    right. (* We will show we always can make progress *)
+    destruct IHHt1... (* by case on whether the function t1 is a value or steps *)
     SCase "t1 is a value".
-      v_cases (inversion H) SSCase; subst; try solve by inversion.
-      SSCase "v_abs". exists ([x0:=t2]t)...
-      SSCase "v_IO". inversion H0; subst; try solve by inversion.
-      SSCase "v_S". inversion H0; subst; try solve by inversion.
- 
+      (* The only value with function type is v_abs, in which case ST_AppAbs applies *)
+      remember (TArrow T11 T12) as TF eqn:HdefTF.
+      remember t1 as tf eqn:Hdeftf.
+      Ltac nonfunction_value Hdeftf Ht1 :=
+             rewrite Hdeftf in Ht1 ; destruct Ht1 ; discriminate .
+      v_cases (destruct H) SSCase .
+      SSCase "v_abs"; exists ([x0:=t2]t); apply ST_AppAbs.
+      SSCase "v_unit". nonfunction_value Hdeftf Ht1.
+      SSCase "v_pair". nonfunction_value Hdeftf Ht1.
+      SSCase "v_sum". nonfunction_value Hdeftf Ht1.
+      SSCase "v_IO". destruct H ; nonfunction_value Hdeftf Ht1.
+      SSCase "v_S". destruct H ; nonfunction_value Hdeftf Ht1.
+
     SCase "t1 steps".
       inversion H as [t1' Hstp]. exists (tapp t1' t2)...
 
@@ -195,7 +200,19 @@ Proof with eauto.
         SSSCase "v_S".
            v_cases (inversion H0) SSSSCase.
            SSSSCase "v_abs". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
-           SSSSCase "v_unit". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
+           SSSSCase "v_unit".
+             subst.
+             remember tunit as t eqn:Heq.
+             has_type_cases (destruct Ht2) SSSSSCase ; try discriminate Heq.
+             SSSSSCase "T_Unit".
+               (* no svalue t1 has type TUnit *)
+               remember t1 as tx eqn:Heqtx ;
+               destruct H1 ;
+                rewrite Heqtx in Ht1 ;
+                remember TUnit as Tval eqn:HeqT ;
+                destruct Ht1 ;
+                 try discriminate HeqT ; try discriminate Heqtx.
+
            SSSSCase "v_pair". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
            SSSSCase "v_sum". inversion H1 ; subst ; inversion Ht2 ; subst ; inversion Ht1.
            SSSSCase "v_IO".
