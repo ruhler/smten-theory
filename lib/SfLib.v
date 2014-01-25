@@ -68,17 +68,6 @@ Proof.
   Case "b = false".
     rewrite <- H. reflexivity.  Qed.
 
-Theorem andb_true_elim2 : forall b c,
-  andb b c = true -> c = true.
-Proof.
-(* An exercise in Basics.v *)
-Admitted.
-
-Theorem beq_nat_sym : forall (n m : nat),
-  beq_nat n m = beq_nat m n.
-(* An exercise in Lists.v *)
-Admitted.
-
 (** * From Props.v *)
 
 Inductive ev : nat -> Prop :=
@@ -97,34 +86,11 @@ Proof.
       inversion H.
     inversion H.  Qed.
 
-Theorem false_beq_nat: forall n n' : nat,
-     n <> n' ->
-     beq_nat n n' = false.
-Proof. 
-(* An exercise in Logic.v *)
-Admitted.
-
 Theorem ex_falso_quodlibet : forall (P:Prop),
   False -> P.
 Proof.
   intros P contra.
   inversion contra.  Qed.
-
-Theorem ev_not_ev_S : forall n,
-  ev n -> ~ ev (S n).
-Proof. 
-(* An exercise in Logic.v *)
-Admitted.
-
-Theorem ble_nat_true : forall n m,
-  ble_nat n m = true -> n <= m.
-(* An exercise in Logic.v *)
-Admitted.
-
-Theorem ble_nat_false : forall n m,
-  ble_nat n m = false -> ~(n <= m).
-(* An exercise in Logic.v *)
-Admitted.
 
 Inductive appears_in (n : nat) : list nat -> Prop :=
 | ai_here : forall l, appears_in n (n::l)
@@ -168,14 +134,6 @@ Theorem multi_R : forall (X:Type) (R:relation X) (x y : X),
 Proof.
   intros X R x y r.
   apply multi_step with y. apply r. apply multi_refl.   Qed.
-
-Theorem multi_trans :
-  forall (X:Type) (R: relation X) (x y z : X),
-      multi R x y  ->
-      multi R y z ->
-      multi R x z.
-Proof.
-  (* FILL IN HERE *) Admitted.
 
 (**  Identifiers and polymorphic partial maps. *)
 
