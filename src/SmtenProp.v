@@ -1,5 +1,5 @@
 
-Require Export Smallstep.
+Require Export SfLib.
 Require Export Smten.
 
 Module SmtenProp.

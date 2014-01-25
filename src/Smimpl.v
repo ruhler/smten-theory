@@ -161,7 +161,7 @@ Reserved Notation "t1 '==>' t2" (at level 40).
 Inductive step : tm -> tm -> Prop :=
   | ST_AppAbs : forall x T t1 t2,
          (tapp (tabs x T t1) t2) ==> [x:=t2]t1
-  | ST_App1 : forall t1 t1' t2,
+  | ST_App : forall t1 t1' t2,
          t1 ==> t1' ->
          tapp t1 t2 ==> tapp t1' t2
   | ST_FstPair : forall t1 t2,
@@ -218,7 +218,7 @@ where "t1 '==>' t2" := (step t1 t2).
 
 Tactic Notation "step_cases" tactic(first) ident(c) :=
   first;
-  [ Case_aux c "ST_AppAbs" | Case_aux c "ST_App1" 
+  [ Case_aux c "ST_AppAbs" | Case_aux c "ST_App" 
   | Case_aux c "ST_FstPair" | Case_aux c "ST_Fst"
   | Case_aux c "ST_SndPair" | Case_aux c "ST_Snd"
   | Case_aux c "ST_Inl" | Case_aux c "ST_Inr"

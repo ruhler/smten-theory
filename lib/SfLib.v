@@ -142,6 +142,10 @@ Inductive empty_relation : nat -> nat -> Prop := .
 
 Definition relation (X:Type) := X -> X -> Prop.
 
+Definition normal_form {X:Type} (R:relation X) (t:X) : Prop :=
+  ~ exists t', R t t'.
+
+
 Definition deterministic {X: Type} (R: relation X) :=
   forall x y1 y2 : X, R x y1 -> R x y2 -> y1 = y2. 
 

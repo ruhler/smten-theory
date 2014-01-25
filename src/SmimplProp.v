@@ -1,5 +1,5 @@
 
-Require Export Smallstep.
+Require Export SfLib.
 Require Export Smimpl.
 
 Module SmimplProp.
