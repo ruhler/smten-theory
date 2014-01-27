@@ -77,59 +77,93 @@ Theorem progress : forall t T,
 Proof with eauto.
   intros t T Ht.
   remember (@empty ty) as Gamma.
-  has_type_cases (induction Ht) Case; subst Gamma...
+  has_type_cases (induction Ht) Case; subst Gamma.
+  Ltac isvalue v_xx := left ; apply v_xx.
   Case "T_Var".
-    (* contradictory: variables cannot be typed in an 
-       empty context *)
-    inversion H. 
-
-  Case "T_App". 
-    (* [t] = [t1 t2].  Proceed by cases on whether [t1] is a 
-       value or steps... *)
+    (* contradiction: variables aren't typed in empty context *)
+    unfold empty in H ; discriminate H.
+  Case "T_Abs". isvalue v_abs.
+  Case "T_App".
+    (* t1 t2.
+       If t1 steps, then we make progress with ST_App,
+       otherwise, t1 must be an abstraction, so we make progress with ST_AppAbs.
+    *)
     right. destruct IHHt1...
     SCase "t1 is a value".
       v_cases (inversion H) SSCase; subst; try solve by inversion.
-      SSCase "v_abs". exists ([x0:=t2]t)...
- 
+      SSCase "v_abs".
+        exists ([x0:=t2]t).
+        apply ST_AppAbs ; assumption.
     SCase "t1 steps".
-      inversion H as [t1' Hstp]. exists (tapp t1' t2)...
-
+      inversion H as [t1' Hstp].
+      exists (tapp t1' t2).
+      apply ST_App ; assumption.
+  Case "T_Unit". isvalue v_unit.
+  Case "T_Pair". isvalue v_pair.
   Case "T_Fst".
+    (* fst t
+       If t steps, then we make progress with ST_Fst,
+       otherwise, t must be a pair, so we make progress with ST_FstPair.
+    *)
     right. destruct IHHt...
-
     SCase "t is a value".
-      (* Since [t] is a value of product type, it must
-         be a pair *)
       v_cases (inversion H) SSCase; subst; try solve by inversion.
-      SSCase "v_pair". eauto.
-
-
-    SCase "t also steps".
-      inversion H as [t' Hstp]. exists (tfst t')...
+      SSCase "v_pair".
+        exists t1.
+        apply ST_FstPair ; assumption.
+    SCase "t steps".
+      inversion H as [t' Hstp].
+      exists (tfst t').
+      apply ST_Fst ; assumption.
 
   Case "T_Snd".
+    (* snd t
+       If t steps, then we make progress with ST_Snd,
+       otherwise, t must be a pair, so we make progress with ST_SndPair.
+    *)
     right. destruct IHHt...
-
     SCase "t is a value".
-      (* Since [t] is a value of product type, it must
-         be a pair *)
       v_cases (inversion H) SSCase; subst; try solve by inversion.
-      SSCase "v_pair". eauto.
-
-    SCase "t also steps".
-      inversion H as [t' Hstp]. exists (tsnd t')...
-
+      SSCase "v_pair".
+        exists t2.
+        apply ST_SndPair ; assumption.
+    SCase "t steps".
+      inversion H as [t' Hstp].
+      exists (tsnd t').
+      apply ST_Snd ; assumption.
+  Case "T_Inl". isvalue v_inl.
+  Case "T_Inr". isvalue v_inr.
   Case "T_Case".
+    (* case t1 t2 t3
+       If t1 steps, then we make progress with ST_Case,
+       otherwise, t must be inl or inr, so we make progress with
+       ST_CaseInl or ST_CaseInr.
+    *)
     right. destruct IHHt1...
-
     SCase "t1 is a value".
       v_cases (inversion H) SSCase; subst; try solve by inversion.
-      SSCase "v_inl". eauto.
-      SSCase "v_inr". eauto.
-
-    SCase "t1 also steps".
-      inversion H as [t1' Hstp]. exists (tcase t1' t2 t3)...
-
+      SSCase "v_inl".
+        exists (tapp t2 t).
+        apply ST_CaseInl ; assumption.
+      SSCase "v_inr".
+        exists (tapp t3 t).
+        apply ST_CaseInr ; assumption.
+    SCase "t1 steps".
+      inversion H as [t1' Hstp].
+      exists (tcase t1' t2 t3).
+      apply ST_Case ; assumption.
+  Case "T_Fix".
+    (* makes progress by ST_Fix *)
+    right.
+    exists (tapp t (tfix t)).
+    apply ST_Fix ; assumption.
+  Case "T_ReturnIO". isvalue v_returnIO.
+  Case "T_BindIO". isvalue v_bindIO.
+  Case "T_SearchIO". isvalue v_searchIO.
+  Case "T_ReturnS". isvalue v_returnS.
+  Case "T_BindS". isvalue v_bindS.
+  Case "T_ZeroS". isvalue v_zeroS.
+  Case "T_PlusS". isvalue v_plusS.
 Qed.
 
 Inductive appears_free_in : id -> tm -> Prop :=
@@ -310,29 +344,83 @@ Theorem preservation : forall t t' T,
 
 Proof with eauto.
   remember (@empty ty) as Gamma. 
-  intros t t' T HT. generalize dependent t'.   
+  intros t t' T HT. generalize dependent t'.
+  Ltac doesnt_step := inversion HE.
   has_type_cases (induction HT) Case;
-       intros t' HE; subst Gamma; subst; 
-       try solve [inversion HE; subst; auto].
+       intros t' HE; subst.
+  Case "T_Var". doesnt_step.
+  Case "T_Abs". doesnt_step.
   Case "T_App".
-    inversion HE; subst...
-    (* Most of the cases are immediate by induction, 
-       and [eauto] takes care of them *)
+    inversion HE; subst.
     SCase "ST_AppAbs".
+      (* substitution preserves typing *)
       apply substitution_preserves_typing with T11...
       inversion HT1...
+    SCase "ST_App".
+      (* t1' t2
+         By induction, t1' has the same type as t1, so
+         t1' t2 has the same type as t1' t2.
+      *)
+      apply T_App with T11 .
+      apply IHHT1. reflexivity. assumption. assumption.
+  Case "T_Unit". doesnt_step.
+  Case "T_Pair". doesnt_step.
   Case "T_Fst".
     inversion HE; subst...
     inversion HT; subst...
   Case "T_Snd".
-    inversion HE; subst...
-    inversion HT; subst...
+    (* ST_SndPair: snd (t1, t2) steps to t2
+       ST_Snd: snd t steps to snd t'
+         t goes to t', which has the same type as t by induction.
+         Then snd t' has the same type as snd t.
+    *)
+    inversion HE; subst.
+    SCase "ST_SndPair".
+      inversion HT ; subst. assumption.
+    SCase "ST_Snd".
+      apply T_Snd with T1;
+      apply IHHT; [ reflexivity | assumption].
+  Case "T_Inl". doesnt_step.
+  Case "T_Inr". doesnt_step.
   Case "T_Case".
-    inversion HE; subst...
-    SCase "inl". inversion HT1; subst...
-    SCase "inr". inversion HT1; subst...
+    (* ST_CaseInl: case (inl t1) t2 t3 steps to (t2 t1)
+         t2 has type T1 -> T3, and t1 has type T1, so (t2 t1) has type T3.
+       ST_CaseInr: case (inr t1) t2 t3 steps to (t3 t1)
+         t3 has type T2 -> T3, and t1 has type T2, so (t3 t1) has type T3.
+       ST_Case: case t1 t2 t3 steps to case t1' t2 t3
+         t1 goes to t1', which has the same type as t1 by induction.
+         Then case t1' t2 t3 has the same type as t1.
+    *)
+    remember (tcase t1 t2 t3) as t eqn:Hdeft.
+    step_cases (destruct HE) SCase ; subst ; try discriminate Hdeft.
+    SCase "ST_CaseInl".
+      injection Hdeft. intros. subst.
+      inversion HT1; subst;
+      apply T_App with T1 ; assumption.
+    SCase "ST_CaseInr".
+      injection Hdeft. intros. subst.
+      inversion HT1; subst;
+      apply T_App with T2 ; assumption.
+    SCase "ST_Case".
+      injection Hdeft. intros. subst.
+      apply T_Case with T1 T2 ;
+      [ apply IHHT1; [ reflexivity | assumption]
+      | assumption
+      | assumption].
   Case "T_Fix".
-    inversion HE; subst...
+    (* tfix t must step to (tapp t (tfix t)),
+       and because (tfix t) has type T, and t has type T -> T,
+       (tapp t (tfix t)) also has type T.
+    *)
+    inversion HE. subst.
+    apply T_App with T; [ assumption | apply T_Fix ; assumption].
+  Case "T_ReturnIO". doesnt_step.
+  Case "T_BindIO". doesnt_step.
+  Case "T_SearchIO". doesnt_step.
+  Case "T_ReturnS". doesnt_step.
+  Case "T_BindS". doesnt_step.
+  Case "T_ZeroS". doesnt_step.
+  Case "T_PlusS". doesnt_step.
 Qed.
 
 Definition stuck (t:tm) : Prop :=
