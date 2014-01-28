@@ -25,29 +25,29 @@ Inductive stepS : tm -> tm -> Prop :=
       t =S=> t'
   | STS_Return : forall t,
       treturnS t =S=> tsetS ftrue t
-  | STS_BindSet : forall p t1 t2 T,
-      empty |- t1 \in T ->
-      tbindS (tsetS p t1) t2 =S=> titeS p (tapp t2 t1) (tzeroS T)
+  | STS_BindSet : forall p t1 t2 T1 T2,
+      empty |- t2 \in (TArrow T1 (TS T2)) ->
+      tbindS (tsetS p t1) t2 =S=> titeS p (tapp t2 t1) (tzeroS T2)
   | STS_Bind : forall t1 t1' t2,
       t1 =S=> t1' ->
       tbindS t1 t2 =S=> tbindS t1' t2
   | STS_Zero : forall T,
       tzeroS T =S=> tsetS ffalse (terr T)
   | STS_PlusSets : forall p1 t1 p2 t2 x,
-      is_fresh_in x p1 ->
-      is_fresh_in x p2 ->
+      ~ Sat.appears_free_in x p1 ->
+      ~ Sat.appears_free_in x p2 ->
       tplusS (tsetS p1 t1) (tsetS p2 t2) =S=>
          tsetS (fite (fvar x) p1 p2) (tite (fvar x) t1 t2)
   | STS_PlusL : forall t1 t1' t2,
       t1 =S=> t1' ->
-      tsetS t1 t2 =S=> tsetS t1' t2
+      tplusS t1 t2 =S=> tplusS t1' t2
   | STS_PlusR : forall t1 t2 t2',
       valueS t1 ->
       t2 =S=> t2' ->
-      tsetS t1 t2 =S=> tsetS t1 t2'
+      tplusS t1 t2 =S=> tplusS t1 t2'
   | STS_IteSets : forall p p1 t1 p2 t2,
-      titeS p (tsumS p1 t1) (tsumS p2 t2) =S=>
-        tsumS (fite p p1 p2) (tite p t1 t2)
+      titeS p (tsetS p1 t1) (tsetS p2 t2) =S=>
+        tsetS (fite p p1 p2) (tite p t1 t2)
   | STS_IteL : forall p t1 t1' t2,
       t1 =S=> t1' ->
       titeS p t1 t2 =S=> titeS p t1' t2
@@ -87,48 +87,55 @@ Proof with eauto.
   Case "T_App". 
      (* progress says either tapp is a value or steps *)
      destruct (progress (tapp t1 t2) T12)...
-     SCase "tapp is a value". inversion H.
+     SCase "tapp is a value".
+       inversion H.
+       inversion H0.
+       inversion H0.
      SCase "tapp steps". right. destruct H as [t3]...
   Case "T_Unit". inversion HSt. inversion H.
   Case "T_Pair". inversion HSt. inversion H.
   Case "T_Fst". 
      destruct(progress (tfst t) T1)...
-     SCase "tfst is a value". inversion H.
+     SCase "tfst is a value". inversion H ; inversion H0.
      SCase "tfst steps". right. destruct H as [t2]...
   Case "T_Snd". 
      destruct (progress (tsnd t) T2)...
-     SCase "tsnd is a value". inversion H.
+     SCase "tsnd is a value". inversion H ; inversion H0.
      SCase "tsnd steps". right. destruct H as [t2]...
-  Case "T_Inl". inversion HSt. inversion H.
-  Case "T_Inr". inversion HSt. inversion H.
+  Case "T_Sum". inversion HSt. inversion H.
   Case "T_Case".
      destruct (progress (tcase t1 t2 t3) T3)...
-     SCase "tcase is a value". inversion H.
+     SCase "tcase is a value". inversion H ; inversion H0.
      SCase "tcase steps". right. destruct H as [t4]...
+  Case "T_Ite".
+     destruct (progress (tite p t1 t2) T)...
+     SCase "tite is a value". inversion H ; inversion H0.
+     SCase "tite steps". right. destruct H...
   Case "T_ReturnIO". inversion HSt. inversion H.
   Case "T_BindIO". inversion HSt. inversion H.
   Case "T_SearchIO". inversion HSt. inversion H.
+  Case "T_IteIO". inversion HSt. inversion H.
   Case "T_BindS".
-     right. destruct (progressS1 t1 (TS T1))...
-     SCase "t1 is a valueS1".
+     right. destruct (IHHt1)...
+     SCase "t1 is a valueS".
        inversion H.
-       SSCase "t1 is returnS".
-         exists (tapp t2 t). apply STS_STS1. apply STS1_BindReturn.
-       SSCase "t1 is zeroS".
-         exists (tzeroS T2). apply STS_STS1. apply STS1_BindZero.
-         rewrite <- H0 in Ht1. inversion Ht1...
-       SSCase "t1 is plusS".
-         exists (tplusS (tbindS t0 t2) (tbindS t3 t2)).
-         apply STS_STS1. apply STS1_BindPlus.
+       SSCase "t1 is tsetS".
+         subst.
+         exists (titeS p (tapp t2 t) (tzeroS T2)).
+         apply STS_BindSet with T1 ; assumption.
      SCase "t1 steps".
        inversion H as [t1'].
        exists (tbindS t1' t2).
-       apply STS_STS1. apply STS1_Bind. assumption.
+       apply STS_Bind. assumption.
   Case "T_PlusS".
      right. destruct IHHt1...
      SCase "t1 is a valueS".
        inversion H.
-       SSCase "t1 is returnS".
+       SSCase "t1 is tsetS".
+          destruct IHHt2...
+          inversion H1.
+          SSSCase "t2 is tsetS".
+            exists (
           exists (treturnS t). apply STS_PlusLeft.
        SSCase "t1 is zeroS".
           exists t2. apply STS_PlusNotLeft.

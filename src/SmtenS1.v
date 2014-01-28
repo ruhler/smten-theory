@@ -55,32 +55,44 @@ Proof with eauto.
   intros t T Ht HSt.
   remember (@empty ty) as Gamma.
   has_type_cases (induction Ht) Case; subst Gamma...
-  Case "T_Var". inversion H.
-  Case "T_Abs". inversion HSt. inversion H.
+  Ltac not_type_S HSt := destruct HSt ; discriminate H.
+  Case "T_Var". inversion H. (* var not well typed in empty context *)
+  Case "T_Abs". not_type_S HSt.
   Case "T_App". 
-     (* progress says either tapp is a value or steps *)
-     destruct (progress (tapp t1 t2) T12)...
-     SCase "tapp is a value". inversion H.
-     SCase "tapp steps". right. destruct H as [t3]...
-  Case "T_Unit". inversion HSt. inversion H.
-  Case "T_Pair". inversion HSt. inversion H.
+     (* progress says either tapp is a value or steps
+        But it's not a value, so it pure steps,
+        which means it also s1-steps.
+     *)
+     assert (HT : \empty |- tapp t1 t2 \in T12).
+     apply T_App with T11; assumption.
+     destruct (progress (tapp t1 t2) T12 HT) ;
+     [ inversion H 
+     | right ; destruct H as [t3] ; exists t3 ; apply STS1_Pure ; assumption].
+  Case "T_Unit". not_type_S HSt.
+  Case "T_Pair". not_type_S HSt.
   Case "T_Fst". 
-     destruct(progress (tfst t) T1)...
-     SCase "tfst is a value". inversion H.
-     SCase "tfst steps". right. destruct H as [t2]...
+     (* progress says either tfst is a value or steps
+        But it's not a value, so it pure steps.
+        which means it also s1-steps.
+     *)
+     assert (HT : \empty |- tfst t \in T1).
+     apply T_Fst with T2 ; assumption.
+     destruct(progress (tfst t) T1 HT) ;
+     [ inversion H
+     | right ; destruct H as [tx] ; exists tx ; apply STS1_Pure ; assumption].
   Case "T_Snd". 
      destruct (progress (tsnd t) T2)...
      SCase "tsnd is a value". inversion H.
      SCase "tsnd steps". right. destruct H as [t2]...
-  Case "T_Inl". inversion HSt. inversion H.
-  Case "T_Inr". inversion HSt. inversion H.
+  Case "T_Inl". not_type_S HSt.
+  Case "T_Inr". not_type_S HSt.
   Case "T_Case".
      destruct (progress (tcase t1 t2 t3) T3)...
      SCase "tcase is a value". inversion H.
      SCase "tcase steps". right. destruct H as [t4]...
-  Case "T_ReturnIO". inversion HSt. inversion H.
-  Case "T_BindIO". inversion HSt. inversion H.
-  Case "T_SearchIO". inversion HSt. inversion H.
+  Case "T_ReturnIO". not_type_S HSt.
+  Case "T_BindIO". not_type_S HSt.
+  Case "T_SearchIO". not_type_S HSt.
   Case "T_BindS".
      right. destruct IHHt1...
      SCase "t1 is a valueS1". inversion H.
