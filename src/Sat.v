@@ -71,5 +71,18 @@ Tactic Notation "afi_cases" tactic(first) ident(c) :=
 
 Hint Constructors appears_free_in.
 
+(* return the number of the largest id that occurs in the given formula *)
+Fixpoint max_id (f : formula) : nat :=
+  match f with
+  | fval b => 0
+  | fvar x => match x with
+                | Id n => n
+              end
+  | fite p a b => max (max_id p) (max (max_id a) (max_id b))
+  end.
+
+Definition fresh_id (f1 : formula) (f2 : formula) : id :=
+   Id (S (max (max_id f1) (max_id f2))).
+
 End Sat.
 

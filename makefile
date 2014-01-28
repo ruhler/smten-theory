@@ -1,5 +1,5 @@
 
-default: src/SmtenIO.vo src/SmimplProp.vo
+default: src/SmtenIO.vo src/SmimplS.vo
 
 %.vo: %.v
 	coqc -I lib -I src $<

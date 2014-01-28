@@ -1,7 +1,4 @@
 Smimpl::
-* Update SmimplProp
-* Remove SmimplS1
-* Update SmimplS
 * Update SmimplIO
 * Prove SmimplIO correct impl of SmtenIO.
 
@@ -10,7 +7,6 @@ Cleanup::
 * factor out common code for stuck and soundness of S1, S, and IO?
 * factor out common code for preservation_multi, unsat_preserves_multi,
   unsat_expands_multi?
-* eliminate Admitted everywhere in the library for theorems I use.
 * Reduce the library to just those things I use.
 * Share the syntax for both Smten and Smimpl?
 

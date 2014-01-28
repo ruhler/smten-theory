@@ -33,11 +33,9 @@ Inductive stepS : tm -> tm -> Prop :=
       tbindS t1 t2 =S=> tbindS t1' t2
   | STS_Zero : forall T,
       tzeroS T =S=> tsetS ffalse (terr T)
-  | STS_PlusSets : forall p1 t1 p2 t2 x,
-      ~ Sat.appears_free_in x p1 ->
-      ~ Sat.appears_free_in x p2 ->
+  | STS_PlusSets : forall p1 t1 p2 t2,
       tplusS (tsetS p1 t1) (tsetS p2 t2) =S=>
-         tsetS (fite (fvar x) p1 p2) (tite (fvar x) t1 t2)
+         tsetS (fite (fvar (fresh_id p1 p2)) p1 p2) (tite (fvar (fresh_id p1 p2)) t1 t2)
   | STS_PlusL : forall t1 t1' t2,
       t1 =S=> t1' ->
       tplusS t1 t2 =S=> tplusS t1' t2
@@ -135,14 +133,40 @@ Proof with eauto.
           destruct IHHt2...
           inversion H1.
           SSSCase "t2 is tsetS".
-            exists (
-          exists (treturnS t). apply STS_PlusLeft.
-       SSCase "t1 is zeroS".
-          exists t2. apply STS_PlusNotLeft.
+            exists (tsetS (fite (fvar (fresh_id p p0)) p p0) (tite (fvar (fresh_id p p0)) t t0)).
+            apply STS_PlusSets.
+          SSSCase "t2 steps".
+            destruct H1 as [t2'].
+            exists (tplusS (tsetS p t) t2').
+            apply STS_PlusR. apply vS_set. assumption.
      SCase "t1 steps".
        inversion H as [t1'].
        exists (tplusS t1' t2).
-       apply STS_Plus1...
+       apply STS_PlusL ; assumption.
+  Case "T_IteS".
+    (* iteS p t1 t2 steps by either STS_IteSets, STS_IteL, or STS_IteR *)
+    right.
+    destruct (IHHt1 (eq_refl empty)).
+    exists T. reflexivity.
+    SCase "t1 is a valueS".
+      inversion H.
+      SSCase "t1 is tsetS".
+        destruct (IHHt2 (eq_refl empty)).
+        exists T. reflexivity.
+        inversion H1.
+        SSSCase "t2 is tsetS".
+          exists (tsetS (fite p p0 p1) (tite p t t0)).
+          apply STS_IteSets.
+        SSSCase "t2 steps".
+          destruct H1 as [t2'].
+          exists (titeS p (tsetS p0 t) t2').
+          apply STS_IteR.
+          apply vS_set.
+          assumption.
+    SCase "t1 steps".
+      destruct H as [t1'].
+      exists (titeS p t1' t2).
+      apply STS_IteL ; assumption.
 Qed.
 
 Theorem preservationS : forall t t' T,
@@ -153,14 +177,38 @@ Theorem preservationS : forall t t' T,
 Proof with eauto.
    intros t t' T HT Hstep.
    generalize dependent T.
-   stepS_cases (induction Hstep) Case; intros Tx HT; subst...
-   Case "STS_STS1". apply preservationS1 with t...
-   Case "STS_PlusLeft". inversion HT...
-   Case "STS_PlusRight". inversion HT...
-   Case "STS_PlusNotRight". inversion HT...
-   Case "STS_PlusNotLeft". inversion HT...
-   Case "STS_Plus1". inversion HT...
-   Case "STS_Plus2". inversion HT...
+   stepS_cases (induction Hstep) Case ; intros Tx HT.
+   Case "STS_Pure". apply preservation with t...
+   Case "STS_Return".
+     inversion HT.
+     apply T_SetS.
+     assumption.
+   Case "STS_BindSet".
+     inversion HT.
+     assert (TArrow T0 (TS T3) = TArrow T1 (TS T2)).
+     apply unique_typing with empty t2 ; assumption.
+     injection H6. intros ; subst.
+     apply T_IteS. apply T_App with T1. assumption.
+     inversion H3. assumption.
+     apply T_ZeroS.
+   Case "STS_Bind". inversion HT...
+   Case "STS_Zero". inversion HT...
+   Case "STS_PlusSets".
+     inversion HT.
+     apply T_SetS.
+     apply T_Ite.
+     inversion H2. assumption.
+     inversion H4 ; assumption.
+   Case "STS_PlusL". inversion HT...
+   Case "STS_PlusR". inversion HT...
+   Case "STS_IteSets".
+     inversion HT.
+     apply T_SetS.
+     apply T_Ite.
+     inversion H4; assumption.
+     inversion H5; assumption.
+   Case "STS_IteL". inversion HT...
+   Case "STS_IteR". inversion HT...
 Qed.
 
 Theorem preservationS_multi : forall t t' T,
