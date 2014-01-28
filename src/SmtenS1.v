@@ -46,6 +46,20 @@ Hint Constructors stepS1.
 Notation multistepS1 := (multi stepS1).
 Notation "t1 '=S1=>*' t2" := (multistepS1 t1 t2) (at level 40).
 
+Lemma pure_stepsS1 : forall t T,
+    empty |- t \in T ->
+    ~ (value t) ->
+    exists t', t =S1=> t'.
+Proof.
+  intros t T HT Hnv.
+  destruct (progress t T HT).
+  Case "t is a value". contradiction.
+  Case "t pure steps".
+    destruct H as [t'].
+    exists t'.
+    apply STS1_Pure ; assumption.
+Qed.
+
 Theorem progressS1 : forall t T,
     empty |- t \in T ->
     (exists T1 : ty, T = TS T1) ->
@@ -63,11 +77,10 @@ Proof with eauto.
         But it's not a value, so it pure steps,
         which means it also s1-steps.
      *)
-     assert (HT : \empty |- tapp t1 t2 \in T12).
-     apply T_App with T11; assumption.
-     destruct (progress (tapp t1 t2) T12 HT) ;
-     [ inversion H 
-     | right ; destruct H as [t3] ; exists t3 ; apply STS1_Pure ; assumption].
+     right ; apply pure_stepsS1 with T12 ;
+     [ apply T_App with T11; assumption
+     | inversion 1
+     ].
   Case "T_Unit". not_type_S HSt.
   Case "T_Pair". not_type_S HSt.
   Case "T_Fst". 
@@ -75,15 +88,13 @@ Proof with eauto.
         But it's not a value, so it pure steps.
         which means it also s1-steps.
      *)
-     assert (HT : \empty |- tfst t \in T1).
+     right ; apply pure_stepsS1 with T1.
      apply T_Fst with T2 ; assumption.
-     destruct(progress (tfst t) T1 HT) ;
-     [ inversion H
-     | right ; destruct H as [tx] ; exists tx ; apply STS1_Pure ; assumption].
+     inversion 1.
   Case "T_Snd". 
-     destruct (progress (tsnd t) T2)...
-     SCase "tsnd is a value". inversion H.
-     SCase "tsnd steps". right. destruct H as [t2]...
+     right ; apply pure_stepsS1 with T2.
+     apply T_Snd with T1 ; assumption.
+     inversion 1.
   Case "T_Inl". not_type_S HSt.
   Case "T_Inr". not_type_S HSt.
   Case "T_Case".
