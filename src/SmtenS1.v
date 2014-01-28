@@ -68,55 +68,55 @@ Theorem progressS1 : forall t T,
 Proof with eauto.
   intros t T Ht HSt.
   remember (@empty ty) as Gamma.
-  has_type_cases (induction Ht) Case; subst Gamma...
-  Ltac not_type_S HSt := destruct HSt ; discriminate H.
+  has_type_cases (induction Ht) Case ; subst Gamma.
+  Ltac is_valueS1 xx := left ; apply xx.
+  Ltac not_type_S HSt := 
+     (* Contradiction: The type of t is not of the form TS T *)
+     destruct HSt ; discriminate H.
+  Ltac pure_progress t T HT :=
+     (* The term pure steps, so it s1-steps *)
+     assert (Hnvalue : ~ (value t)) ;
+     [ unfold not ; intro Hvalue ; inversion Hvalue 
+     | right ; apply (pure_stepsS1 t T HT Hnvalue)].
   Case "T_Var". inversion H. (* var not well typed in empty context *)
   Case "T_Abs". not_type_S HSt.
-  Case "T_App". 
-     (* progress says either tapp is a value or steps
-        But it's not a value, so it pure steps,
-        which means it also s1-steps.
-     *)
-     right ; apply pure_stepsS1 with T12 ;
-     [ apply T_App with T11; assumption
-     | inversion 1
-     ].
+  Case "T_App". pure_progress (tapp t1 t2) T12 (T_App T11 T12 empty t1 t2 Ht1 Ht2).
   Case "T_Unit". not_type_S HSt.
   Case "T_Pair". not_type_S HSt.
-  Case "T_Fst". 
-     (* progress says either tfst is a value or steps
-        But it's not a value, so it pure steps.
-        which means it also s1-steps.
-     *)
-     right ; apply pure_stepsS1 with T1.
-     apply T_Fst with T2 ; assumption.
-     inversion 1.
-  Case "T_Snd". 
-     right ; apply pure_stepsS1 with T2.
-     apply T_Snd with T1 ; assumption.
-     inversion 1.
+  Case "T_Fst". pure_progress (tfst t) T1 (T_Fst empty t T1 T2 Ht). 
+  Case "T_Snd". pure_progress (tsnd t) T2 (T_Snd empty t T1 T2 Ht).
   Case "T_Inl". not_type_S HSt.
   Case "T_Inr". not_type_S HSt.
-  Case "T_Case".
-     destruct (progress (tcase t1 t2 t3) T3)...
-     SCase "tcase is a value". inversion H.
-     SCase "tcase steps". right. destruct H as [t4]...
+  Case "T_Case". pure_progress (tcase t1 t2 t3) T3 (T_Case empty t1 t2 t3 T1 T2 T3 Ht1 Ht2 Ht3).
+  Case "T_Fix". pure_progress (tfix t) T (T_Fix empty t T Ht).
   Case "T_ReturnIO". not_type_S HSt.
   Case "T_BindIO". not_type_S HSt.
   Case "T_SearchIO". not_type_S HSt.
+  Case "T_ReturnS". is_valueS1 vS1_return.
   Case "T_BindS".
-     right. destruct IHHt1...
-     SCase "t1 is a valueS1". inversion H.
+     (* bindS t1 t2:
+        by induction, t1 is either an s1-value, or s1-steps.
+          s1-value returnS: BindReturn applies
+          s1-value zero: BindZero applies
+          s1-value plus: BindPlus applies
+          s1-steps: Bind applies
+     *)
+     right.
+     destruct (IHHt1 (eq_refl empty) (ex_intro (fun T2 => TS T1 = TS T2) T1 eq_refl)).
+     SCase "t1 is a valueS1". inversion H ; subst.
       SSCase "t1 is returnS t". 
-           exists (tapp t2 t). apply STS1_BindReturn.
+         exists (tapp t2 t). apply STS1_BindReturn.
       SSCase "t1 is zeroS".
-           rewrite <- H0 in Ht1.
-           inversion Ht1.
-           exists (tzeroS T2).
-           apply STS1_BindZero...      
+         inversion Ht1.
+         exists (tzeroS T2). apply STS1_BindZero ; assumption.
       SSCase "t1 is plusS".
-           exists (tplusS (tbindS t0 t2) (tbindS t3 t2)). apply STS1_BindPlus.
-     SCase "t1 steps". inversion H as [t3]...
+         exists (tplusS (tbindS t0 t2) (tbindS t3 t2)). apply STS1_BindPlus.
+     SCase "t1 steps".
+         destruct H as [t1'].
+         exists (tbindS t1' t2).
+         apply STS1_Bind ; assumption.
+  Case "T_ZeroS". is_valueS1 vS1_zero.
+  Case "T_PlusS". is_valueS1 vS1_plus.
 Qed.
 
 Theorem preservationS1 : forall t t' T,
