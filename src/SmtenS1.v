@@ -124,31 +124,34 @@ Theorem preservationS1 : forall t t' T,
      t =S1=> t' ->
      empty |- t' \in T.
 
-Proof with eauto.
+Proof.
    intros t t' T HT Hstep.
    generalize dependent T.
-   stepS1_cases (induction Hstep) Case; intros T HT; subst...
+   stepS1_cases (induction Hstep) Case; intros T HT.
    Case "STS1_Pure".
-     apply preservation with t...
+     (* preservationS1 comes because we have pure preservation *)
+     apply preservation with t ; assumption.
    Case "STS1_BindReturn".
-     inversion HT. inversion H2.
-     apply T_App with T1...
+     (* Given HT, tapp t2 t1 must have type T by T_App *)
+     inversion HT ; subst ; inversion H2 ; subst.
+     apply T_App with T1 ; assumption.
    Case "STS1_BindZero".
-     inversion HT.
-     assert (TArrow T1 (TS T2) = TArrow T0 (TS T3)).
-     apply unique_typing with empty t...
-     injection H6.
-     intros .
-     rewrite H7.
+     (* Types T2 and T are equal because typing is unique. *)
+     inversion HT ; subst.
+     assert (Htarreq : TArrow T1 (TS T2) = TArrow T0 (TS T3)).
+     apply unique_typing with empty t ; assumption.
+     injection Htarreq.
+     intros ; subst.
      apply T_ZeroS.
    Case "STS1_BindPlus".
-     inversion HT. inversion H2.
-     apply T_PlusS.
-     apply T_BindS with T1...
-     apply T_BindS with T1...
+     inversion HT ; subst ; inversion H2 ; subst.
+     apply T_PlusS ; apply T_BindS with T1 ; assumption.
    Case "STS1_Bind".
-     inversion HT.
-     apply T_BindS with T1...
+     (* by induction on t1 preserving typing *)
+     inversion HT ; subst.
+     apply T_BindS with T1.
+     apply IHHstep ; assumption.
+     assumption.
 Qed.
 
 Definition stuckS1 (t:tm) : Prop :=
@@ -160,11 +163,11 @@ Corollary soundnessS1 : forall t t' T,
   t =S1=>* t' ->
   ~(stuckS1 t').
 Proof.
-  intros t t' T Hhas_type Hio Hmulti. unfold stuckS1.
+  intros t t' T Hhas_type Hs Hmulti. unfold stuckS1.
   intros [Hnf Hnot_val]. unfold normal_form in Hnf.
   induction Hmulti. apply Hnot_val. 
    destruct (progressS1 x0 T).
-   apply Hhas_type. apply Hio. apply H.
+   apply Hhas_type. apply Hs. apply H.
    contradiction.
 
    apply IHHmulti.
