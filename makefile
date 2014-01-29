@@ -13,7 +13,7 @@ src/Sat.vo: lib/SfLib.vo
 
 src/Smimpl.vo: lib/SfLib.vo src/Sat.vo
 src/SmimplProp.vo: lib/SfLib.vo src/Smimpl.vo
-src/SmimplS.vo: src/Smimpl.vo
+src/SmimplS.vo: src/SmimplProp.vo
 src/SmimplIO.vo: src/SmimplS.vo
 
 clean:

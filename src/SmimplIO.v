@@ -7,6 +7,7 @@ Module SmimplIO.
 Import Smimpl.Smimpl.
 Import SmimplProp.SmimplProp.
 Import SmimplS.SmimplS.
+Import Sat.Sat.
 
 Inductive valueIO : tm -> Prop :=
   | vIO_return : forall t, valueIO (treturnIO t)
@@ -26,10 +27,13 @@ Inductive stepIO : tm -> tm -> Prop :=
   | STIO_Bind : forall t1 t1' t2,
       t1 =IO=> t1' ->
       tbindIO t1 t2 =IO=> tbindIO t1' t2 
-  | STIO_SearchReturn : forall t,
-      tsearchIO (treturnS t) =IO=> treturnIO (tjust t)
-  | STIO_SearchZero : forall T,
-      tsearchIO (tzeroS T) =IO=> treturnIO (tnothing T)
+  | STIO_SearchSat : forall p t m,
+      satisfies p m ->
+      tsearchIO (tsetS p t) =IO=> treturnIO (tjust (realize t m))
+  | STIO_SearchUnsat : forall p t T,
+      unsatisfiable p ->
+      empty |- t \in T ->
+      tsearchIO (tsetS p t) =IO=> treturnIO (tnothing T)
   | STIO_Search : forall t t',
       t =S=> t' ->
       tsearchIO t =IO=> tsearchIO t'
@@ -39,8 +43,8 @@ where "t1 '=IO=>' t2" := (stepIO t1 t2).
 Tactic Notation "stepIO_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "STIO_Pure" | Case_aux c "STIO_BindReturn"
-  | Case_aux c "STIO_Bind" | Case_aux c "STIO_SearchReturn"
-  | Case_aux c "STIO_SearchZero" | Case_aux c "STIO_Search"
+  | Case_aux c "STIO_Bind" | Case_aux c "STIO_SearchSat"
+  | Case_aux c "STIO_SearchUnsat" | Case_aux c "STIO_Search"
   ].
 
 Hint Constructors stepIO.
@@ -57,29 +61,33 @@ Proof with eauto.
   intros t T Ht HIOt.
   remember (@empty ty) as Gamma.
   has_type_cases (induction Ht) Case; subst Gamma...
+  Ltac not_type_IO := inversion HIOt ; inversion H.
   Case "T_Var". inversion H.
-  Case "T_Abs". inversion HIOt. inversion H.
+  Case "T_Abs". not_type_IO.
   Case "T_App". 
      (* progress says either tapp is a value or steps *)
      destruct (progress (tapp t1 t2) T12)...
-     SCase "tapp is a value". inversion H.
+     SCase "tapp is a value". inversion H ; inversion H0.
      SCase "tapp steps". right. destruct H as [t3]...
-  Case "T_Unit". inversion HIOt. inversion H.
-  Case "T_Pair". inversion HIOt. inversion H.
+  Case "T_Unit". not_type_IO.
+  Case "T_Pair". not_type_IO.
   Case "T_Fst". 
      destruct(progress (tfst t) T1)...
-     SCase "tfst is a value". inversion H.
+     SCase "tfst is a value". inversion H ; inversion H0.
      SCase "tfst steps". right. destruct H as [t2]...
   Case "T_Snd". 
      destruct (progress (tsnd t) T2)...
-     SCase "tsnd is a value". inversion H.
+     SCase "tsnd is a value". inversion H ; inversion H0.
      SCase "tsnd steps". right. destruct H as [t2]...
-  Case "T_Inl". inversion HIOt. inversion H.
-  Case "T_Inr". inversion HIOt. inversion H.
+  Case "T_Sum". not_type_IO.
   Case "T_Case".
      destruct (progress (tcase t1 t2 t3) T3)...
-     SCase "tcase is a value". inversion H.
+     SCase "tcase is a value". inversion H ; inversion H0.
      SCase "tcase steps". right. destruct H as [t4]...
+  Case "T_Ite".
+     destruct (progress (tite p t1 t2) T)...
+     SCase "tite is a value". inversion H ; inversion H0.
+     SCase "tite steps". right. destruct H...
   Case "T_BindIO".
      right. destruct IHHt1...
      SCase "t1 is a valueIO". inversion H...
@@ -88,8 +96,10 @@ Proof with eauto.
      right. destruct (progressS t (TS T))...
      SCase "t is a valueS".
        inversion H.
+       
+       split (exists m, satisfies p m).
        SSCase "t is returnS".
-         exists (treturnIO (tjust t0)). apply STIO_SearchReturn.
+         exists (treturnIO (tjust t0)). apply STIO_SearchSat.
        SSCase "t is zeroS".
          exists (treturnIO (tnothing T0)). apply STIO_SearchZero.
      SCase "t steps".

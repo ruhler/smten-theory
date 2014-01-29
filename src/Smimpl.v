@@ -338,5 +338,32 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
 
 Hint Constructors has_type.
 
+Fixpoint realize (t : tm) (m : model) : tm :=
+  match t with
+  | tvar x => tvar x
+  | tabs x T t1 => tabs x T (realize t1 m)
+  | tapp t1 t2 => tapp (realize t1 m) (realize t2 m)
+  | tunit => tunit
+  | tpair t1 t2 => tpair (realize t1 m) (realize t2 m)
+  | tfst t1 => tfst (realize t1 m)
+  | tsnd t1 => tsnd (realize t1 m)
+  | tinl T t1 => tinl T (realize t1 m)
+  | tinr T t1 => tinr T (realize t1 m)
+  | tsum p t1 t2 => tsum (fval (evaluate p m)) (realize t1 m) (realize t2 m)
+  | tcase t1 t2 t3 => tcase (realize t1 m) (realize t2 m) (realize t3 m)
+  | tfix t1 => tfix (realize t1 m)
+  | tite p t1 t2 => tite (fval (evaluate p m)) (realize t1 m) (realize t2 m)
+  | treturnIO t1 => treturnIO (realize t1 m)
+  | tbindIO t1 t2 => tbindIO (realize t1 m) (realize t2 m)
+  | tsearchIO t1 => tsearchIO (realize t1 m)
+  | titeIO p t1 t2 => titeIO (fval (evaluate p m)) (realize t1 m) (realize t2 m)
+  | treturnS t1 => treturnS (realize t1 m)
+  | tbindS t1 t2 => tbindS (realize t1 m) (realize t2 m)
+  | tzeroS T => tzeroS T
+  | tplusS t1 t2 => tplusS (realize t1 m) (realize t2 m)
+  | tsetS p t1 => tsetS (fval (evaluate p m)) (realize t1 m)
+  | titeS p t1 t2 => titeS (fval (evaluate p m)) (realize t1 m) (realize t2 m)
+  end.
+
 End Smimpl.
 
