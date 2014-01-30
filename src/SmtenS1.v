@@ -182,17 +182,16 @@ Theorem stepS1_deterministic : forall t t1 t2 T,
    t1 = t2
    .
 
-(* sts1_pure: A tactic to handle the case where determinism of stepS1 comes
-   directly from determinism of step. *)
-Ltac sts1_pure tx T := 
-  inversion Hstep1 ;
-  inversion Hstep2 ;
-  apply step_deterministic with tx T;
-  repeat assumption.
 
 Proof.
   intro t.
   t_cases (induction t) Case; intros tx ty T HT Hstep1 Hstep2.
+  Ltac sts1_pure tx T := 
+    (* Determinism of stepS1 comes directly from determinism of step, 
+       because only sts1-pure applies .*)
+    inversion Hstep1 ; inversion Hstep2 ;
+    apply step_deterministic with tx T; assumption.
+  Ltac doesnt_step_S1 := inversion Hstep1; inversion H.
   Case "tvar". sts1_pure (tvar i) T.
   Case "tapp". sts1_pure (tapp t1 t2) T.
   Case "tabs". sts1_pure (tabs i t t0) T.
@@ -204,62 +203,50 @@ Proof.
   Case "tinr". sts1_pure (tinr t t0) T.
   Case "tcase". sts1_pure (tcase t1 t2 t3) T.
   Case "tfix". sts1_pure (tfix t) T.
-  Case "treturnIO". sts1_pure (treturnIO t) T.
-  Case "tbindIO". sts1_pure (tbindIO t1 t2) T.
-  Case "tsearchIO". sts1_pure (tsearchIO t) T.
-  Case "treturnS". sts1_pure (treturnS t) T.
+  Case "treturnIO". doesnt_step_S1.
+  Case "tbindIO". doesnt_step_S1.
+  Case "tsearchIO". doesnt_step_S1.
+  Case "treturnS". doesnt_step_S1.
   Case "tbindS". 
-    inversion Hstep1.
+    inversion Hstep1 ; subst.
     SCase "pure step to tx".
-       inversion Hstep2.
-       SSCase "pure step to ty".
-           apply step_deterministic with (tbindS t1 t2) T.
-           assumption. assumption. assumption.
-       SSCase "BindReturn to ty". inversion H.
-       SSCase "BindZero to ty". inversion H.
-       SSCase "BindPlus to ty". inversion H.
-       SSCase "Bind to ty". inversion H.
+       (* there is no pure step from (bindS t1 t2), so this can't happen *)
+       inversion H.
     SCase "BindReturn to tx".
-       rewrite <- H0 in Hstep2.
        inversion Hstep2.
        SSCase "pure step to ty". inversion H.
        SSCase "BindReturn to ty". reflexivity.
-       SSCase "Bind to ty". inversion H5. inversion H6.
+       SSCase "Bind to ty".
+         (* this would require returnS to s1-step, but it doesn't *)
+         inversion H2. inversion H3.
     SCase "BindZero to tx".
-       rewrite <- H in Hstep2.
        inversion Hstep2.
-       SSCase "pure step to ty". inversion H3.
+       SSCase "pure step to ty". inversion H.
        SSCase "BindZero to ty".
-         assert (TArrow T1 (TS T2) = TArrow T1 (TS T3)).
-         apply unique_typing with empty t2.
-         assumption. assumption.
-         injection H7. intro Hteq. rewrite Hteq. reflexivity.
-       SSCase "Bind to ty". inversion H6. inversion H7.
+         assert (Htarreq : TArrow T1 (TS T2) = TArrow T1 (TS T3)).
+         apply unique_typing with empty t2 ; assumption.
+         injection Htarreq. intros ; subst ; reflexivity.
+       SSCase "Bind to ty". inversion H3. inversion H4.
     SCase "BindPlus to tx".
-       rewrite <- H0 in Hstep2.
        inversion Hstep2.
        SSCase "pure to ty". inversion H.
        SSCase "BindPlus to ty". reflexivity.
-       SSCase "Bind to ty". inversion H5. inversion H6.
+       SSCase "Bind to ty". inversion H2. inversion H3.
     SCase "Bind to tx".
-       inversion Hstep2.
-       SSCase "pure to ty". inversion H3.
+       inversion Hstep2 ; subst.
+       SSCase "pure to ty". inversion H.
        SSCase "BindReturn to ty".
-         rewrite <- H4 in H2.
-         inversion H2. inversion H6.
+         inversion H2. inversion H.
        SSCase "BindZero to ty".
-         rewrite <- H3 in H2.
-         inversion H2. inversion H7.
+         inversion H2. inversion H.
        SSCase "BindPlus to ty".
-         rewrite <- H4 in H2.
-         inversion H2. inversion H6.
+         inversion H2. inversion H.
        SSCase "Bind to ty".
          f_equal.
          inversion HT.
-         apply IHt1 with (TS T1).
-         assumption. assumption. assumption.
-  Case "tzeroS". inversion Hstep1. inversion H.
-  Case "tplusS". inversion Hstep1. inversion H.
+         apply IHt1 with (TS T1) ; assumption.
+  Case "tzeroS". doesnt_step_S1.
+  Case "tplusS". doesnt_step_S1.
 Qed.
 
 End SmtenS1.
