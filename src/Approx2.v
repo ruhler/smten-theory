@@ -1,51 +1,32 @@
 
-Section Approx.
+Section Approx2.
 
 Variable Model : Type.
 
 Definition BoolF : Type := Model -> bool.
 
-
 Definition unsat (x : BoolF) : Prop :=
     forall m, ~ eq_true (x m)
     .
 
-(* We approximate a boolean formula x using two formulas:
-    a - an under approximation.
-    b - an over approximation.
+(* We approximate an element as:
+    p - condition under which the element is known.
+    a - value of the element when known.
+    b - value of the element when unknown.
 *)
-Definition approx (a : BoolF) (b : BoolF) (x : BoolF) : Prop
-    := (forall t, eq_true (a t) -> eq_true (x t))
-    /\ (forall t, eq_true (x t) -> eq_true (b t))
+Definition approx (T : Type) (x : Model -> T) (p : BoolF) (a : Model -> T) (b : Model -> T) : Prop
+    := (forall t, x t = if p t then a t else b t)
     .
 
-Theorem approx_useful_sat : forall xi xo xx m,
-    approx xi xo xx ->
-    eq_true (xi m) ->
-    eq_true (xx m)
+Theorem approx_useful_sat : forall x xp xa xb m,
+    approx x xp xa xb ->
+    eq_true (andb (xp m) (xa m)) ->
+    eq_true (x m)
     .
-Proof.
-  intros xi xo xx m Happrox Hsat.
-  unfold approx in Happrox.
-  decompose [and] Happrox.
-  apply H ; assumption.
-Qed.
 
-Theorem approx_useful_unsat : forall xi xo xx,
-    approx xi xo xx ->
-    unsat xo ->
-    unsat xx
-    .
-Proof.
-  intros xi xo xx Happrox Hunsat.
-  unfold unsat.
-  intros m Hxx.
-  unfold approx in Happrox.
-  unfold unsat in Hunsat.
-  apply (Hunsat m).
-  decompose [and] Happrox.
-  apply H0 ; assumption.
-Qed.
+Theorem approx_useful_unsat : forall x xp xa xb,
+    approx x xp xa xb ->
+    unsat
 
 Lemma i_implies_o : forall xi xo xx,
     approx xi xo xx ->
@@ -337,4 +318,4 @@ Proof.
   destruct (po m) ; inversion H.
 Qed. 
 
-End Approx.
+End Approx2.
