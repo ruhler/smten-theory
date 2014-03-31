@@ -6,12 +6,12 @@ Module SmtenS1.
 Import Smten.Smten.
 Import SmtenProp.SmtenProp.
 
-(* S1 steps get rid of bindS *)
+(* S1 pulls empty, single, and union to the top *)
 
 Inductive valueS1 : tm -> Prop :=
-  | vS1_return : forall t, valueS1 (treturnS t)
-  | vS1_zero : forall T, valueS1 (tzeroS T)
-  | vS1_plus : forall t1 t2, valueS1 (tplusS t1 t2)
+  | vS1_empty : forall T, valueS1 (temptyS T)
+  | vS1_single : forall t, valueS1 (tsingleS t)
+  | vS1_union : forall t1 t2, valueS1 (tunionS t1 t2)
   .
 
 Hint Constructors valueS1.
@@ -22,24 +22,35 @@ Inductive stepS1 : tm -> tm -> Prop :=
   | STS1_Pure : forall t t',
       t ==> t' ->
       t =S1=> t'
-  | STS1_BindReturn : forall t1 t2,
-      tbindS (treturnS t1) t2 =S1=> tapp t2 t1
-  | STS1_BindZero : forall T1 T2 t,
-      empty |- t \in TArrow T1 (TS T2) ->
-      tbindS (tzeroS T1) t =S1=> tzeroS T2
-  | STS1_BindPlus : forall t1 t2 t3,
-      tbindS (tplusS t1 t2) t3 =S1=> tplusS (tbindS t1 t3) (tbindS t2 t3)
-  | STS1_Bind : forall t1 t1' t2,
+  | STS1_MapEmpty : forall T1 T2 t,
+      empty |- t \in TArrow T1 T2 ->
+      tmapS t (temptyS T1) =S1=> temptyS T2
+  | STS1_MapSingle : forall t1 t2,
+      tmapS t1 (tsingleS t2) =S1=> tsingleS (tapp t1 t2)
+  | STS1_MapUnion : forall t1 t2 t3,
+      tmapS t1 (tunionS t2 t3) =S1=> tunionS (tmapS t1 t2) (tmapS t1 t3)
+  | STS1_Map : forall t1 t2 t2',
+      t2 =S1=> t2' ->
+      tmapS t1 t2 =S1=> tmapS t1 t2'
+  | STS1_JoinEmpty : forall T,
+      tjoinS (temptyS (TS T)) =S1=> temptyS T
+  | STS1_JoinSingle : forall t1,
+      tjoinS (tsingleS t1) =S1=> t1
+  | STS1_JoinUnion : forall t1 t2,
+      tjoinS (tunionS t1 t2) =S1=> tunionS (tjoinS t1) (tjoinS t2)
+  | STS1_Join : forall t1 t1',
       t1 =S1=> t1' ->
-      tbindS t1 t2 =S1=> tbindS t1' t2 
+      tjoinS t1 =S1=> tjoinS t1'
 
 where "t1 '=S1=>' t2" := (stepS1 t1 t2).
 
 Tactic Notation "stepS1_cases" tactic(first) ident(c) :=
   first;
-  [ Case_aux c "STS1_Pure" | Case_aux c "STS1_BindReturn"
-  | Case_aux c "STS1_BindZero" | Case_aux c "STS1_BindPlus"
-  | Case_aux c "STS1_Bind" ].
+  [ Case_aux c "STS1_Pure"
+  | Case_aux c "STS1_MapEmpty" | Case_aux c "STS1_MapSingle"
+  | Case_aux c "STS1_MapUnion" | Case_aux c "STS1_Map"
+  | Case_aux c "STS1_JoinEmpty" | Case_aux c "STS1_JoinSingle"
+  | Case_aux c "STS1_JoinUnion" | Case_aux c "STS1_Join" ].
 
 Hint Constructors stepS1.
 
@@ -92,31 +103,54 @@ Proof with eauto.
   Case "T_ReturnIO". not_type_S HSt.
   Case "T_BindIO". not_type_S HSt.
   Case "T_SearchIO". not_type_S HSt.
-  Case "T_ReturnS". is_valueS1 vS1_return.
-  Case "T_BindS".
-     (* bindS t1 t2:
+  Case "T_EmptyS". is_valueS1 vS1_empty.
+  Case "T_SingleS". is_valueS1 vS1_single.
+  Case "T_UnionS". is_valueS1 vS1_union.
+  Case "T_MapS".
+     (* mapS t1 t2:
         by induction, t1 is either an s1-value, or s1-steps.
-          s1-value returnS: BindReturn applies
-          s1-value zero: BindZero applies
-          s1-value plus: BindPlus applies
-          s1-steps: Bind applies
+          s1-value empty: MapEmpty applies
+          s1-value single: MapSIngle applies
+          s1-value union: MapUnion applies
+          s1-steps: Map applies
      *)
      right.
-     destruct (IHHt1 (eq_refl empty) (ex_intro (fun T2 => TS T1 = TS T2) T1 eq_refl)).
+     destruct (IHHt2 (eq_refl empty) (ex_intro (fun T2 => TS T1 = TS T2) T1 eq_refl)).
      SCase "t1 is a valueS1". inversion H ; subst.
-      SSCase "t1 is returnS t". 
-         exists (tapp t2 t). apply STS1_BindReturn.
-      SSCase "t1 is zeroS".
-         inversion Ht1.
-         exists (tzeroS T2). apply STS1_BindZero ; assumption.
-      SSCase "t1 is plusS".
-         exists (tplusS (tbindS t0 t2) (tbindS t3 t2)). apply STS1_BindPlus.
+      SSCase "t1 is emptyS".
+         inversion Ht2. subst.
+         exists (temptyS T2).
+         exact (STS1_MapEmpty T1 T2 t1 Ht1).
+      SSCase "t1 is singleS t". 
+         exists (tsingleS (tapp t1 t)). apply STS1_MapSingle.
+      SSCase "t1 is unionS".
+         exists (tunionS (tmapS t1 t0) (tmapS t1 t3)). apply STS1_MapUnion.
+     SCase "t1 steps".
+         destruct H as [t2'].
+         exists (tmapS t1 t2').
+         apply STS1_Map ; assumption.
+  Case "T_JoinS".
+      (* joinS t1:
+        by induction, t1 is either an s1-value, or s1-steps.
+          s1-value empty: JoinZero applies
+          s1-value single: JoinSingle applies
+          s1-value union: JoinUnion applies
+          s1-steps: Join applies
+     *)
+     right.
+     destruct (IHHt (eq_refl empty) (ex_intro (fun T1 => TS (TS T) = TS T1) (TS T) eq_refl)).
+     SCase "t1 is a valueS1". inversion H ; subst.
+      SSCase "t1 is emptyS".
+         inversion Ht.
+         exists (temptyS T). apply STS1_JoinEmpty ; assumption.
+      SSCase "t1 is singleS t". 
+         exists (t0). apply STS1_JoinSingle.
+      SSCase "t1 is unionS".
+         exists (tunionS (tjoinS t1) (tjoinS t2)). apply STS1_JoinUnion.
      SCase "t1 steps".
          destruct H as [t1'].
-         exists (tbindS t1' t2).
-         apply STS1_Bind ; assumption.
-  Case "T_ZeroS". is_valueS1 vS1_zero.
-  Case "T_PlusS". is_valueS1 vS1_plus.
+         exists (tjoinS t1').
+         apply STS1_Join ; assumption.
 Qed.
 
 Theorem preservationS1 : forall t t' T,
@@ -127,31 +161,45 @@ Theorem preservationS1 : forall t t' T,
 Proof.
    intros t t' T HT Hstep.
    generalize dependent T.
-   stepS1_cases (induction Hstep) Case; intros T HT.
+   stepS1_cases (induction Hstep) Case; intros TT HT.
    Case "STS1_Pure".
      (* preservationS1 comes because we have pure preservation *)
      apply preservation with t ; assumption.
-   Case "STS1_BindReturn".
-     (* Given HT, tapp t2 t1 must have type T by T_App *)
-     inversion HT ; subst ; inversion H2 ; subst.
-     apply T_App with T1 ; assumption.
-   Case "STS1_BindZero".
-     (* Types T2 and T are equal because typing is unique. *)
+   Case "STS1_MapEmpty".
+     (* Types T2 and TT are equal because typing is unique. *)
      inversion HT ; subst.
-     assert (Htarreq : TArrow T1 (TS T2) = TArrow T0 (TS T3)).
+     assert (Htarreq : TArrow T1 T2 = TArrow T0 T3).
      apply unique_typing with empty t ; assumption.
      injection Htarreq.
      intros ; subst.
-     apply T_ZeroS.
-   Case "STS1_BindPlus".
-     inversion HT ; subst ; inversion H2 ; subst.
-     apply T_PlusS ; apply T_BindS with T1 ; assumption.
-   Case "STS1_Bind".
+     apply T_EmptyS.
+   Case "STS1_MapSingle".
+     (* Given HT, tsingle (tapp t2 t1) must have type TT by T_App *)
+     inversion HT; subst ; inversion H4 ; subst.
+     apply T_SingleS; apply T_App with T1 ; assumption.
+   Case "STS1_MapUnion".
+     inversion HT ; subst ; inversion H4 ; subst.
+     apply T_UnionS ; apply T_MapS with T1 ; assumption.
+   Case "STS1_Map".
      (* by induction on t1 preserving typing *)
      inversion HT ; subst.
-     apply T_BindS with T1.
+     apply T_MapS with T1 . assumption.
      apply IHHstep ; assumption.
+   Case "STS1_JoinEmpty".
+     inversion HT ; subst ; inversion H1 ; subst.
+     apply T_EmptyS.
+   Case "STS1_JoinSingle".
+     inversion HT ; subst.
+     inversion H1 ; subst.
      assumption.
+   Case "STS1_JoinUnion".
+     inversion HT ; subst . inversion H1 ; subst.
+     apply T_UnionS ; apply T_JoinS ; assumption.
+   Case "STS1_Join".
+     (* by induction on t1 preserving typing *)
+     inversion HT ; subst.
+     apply T_JoinS.
+     apply IHHstep ; assumption.
 Qed.
 
 Definition stuckS1 (t:tm) : Prop :=
@@ -206,47 +254,82 @@ Proof.
   Case "treturnIO". doesnt_step_S1.
   Case "tbindIO". doesnt_step_S1.
   Case "tsearchIO". doesnt_step_S1.
-  Case "treturnS". doesnt_step_S1.
-  Case "tbindS". 
+  Case "temptyS". doesnt_step_S1.
+  Case "tsingleS". doesnt_step_S1.
+  Case "tunionS". doesnt_step_S1.
+  Case "tmapS". 
     inversion Hstep1 ; subst.
     SCase "pure step to tx".
-       (* there is no pure step from (bindS t1 t2), so this can't happen *)
+       (* there is no pure step from (mapS t1 t2), so this can't happen *)
        inversion H.
-    SCase "BindReturn to tx".
+    SCase "MapEmpty to tx".
        inversion Hstep2.
        SSCase "pure step to ty". inversion H.
-       SSCase "BindReturn to ty". reflexivity.
-       SSCase "Bind to ty".
-         (* this would require returnS to s1-step, but it doesn't *)
-         inversion H2. inversion H3.
-    SCase "BindZero to tx".
-       inversion Hstep2.
-       SSCase "pure step to ty". inversion H.
-       SSCase "BindZero to ty".
-         assert (Htarreq : TArrow T1 (TS T2) = TArrow T1 (TS T3)).
-         apply unique_typing with empty t2 ; assumption.
+       SSCase "MapEmpty to ty".
+         assert (Htarreq : TArrow T1 T2 = TArrow T1 T3).
+         apply unique_typing with empty t1 ; assumption.
          injection Htarreq. intros ; subst ; reflexivity.
-       SSCase "Bind to ty". inversion H3. inversion H4.
-    SCase "BindPlus to tx".
+       SSCase "Map to ty". inversion H3. inversion H4.
+    SCase "MapSingle to tx".
+       inversion Hstep2.
+       SSCase "pure step to ty". inversion H.
+       SSCase "MapSingle to ty". reflexivity.
+       SSCase "Map to ty".
+         (* this would require singleS to s1-step, but it doesn't *)
+         inversion H2. inversion H3.
+    SCase "MapUnion to tx".
        inversion Hstep2.
        SSCase "pure to ty". inversion H.
-       SSCase "BindPlus to ty". reflexivity.
-       SSCase "Bind to ty". inversion H2. inversion H3.
-    SCase "Bind to tx".
+       SSCase "MapUnion to ty". reflexivity.
+       SSCase "Map to ty". inversion H2. inversion H3.
+    SCase "Map to tx".
        inversion Hstep2 ; subst.
        SSCase "pure to ty". inversion H.
-       SSCase "BindReturn to ty".
+       SSCase "MapEmpty to ty".
          inversion H2. inversion H.
-       SSCase "BindZero to ty".
+       SSCase "MapSingle to ty".
          inversion H2. inversion H.
-       SSCase "BindPlus to ty".
+       SSCase "MapUnion to ty".
          inversion H2. inversion H.
-       SSCase "Bind to ty".
+       SSCase "Map to ty".
          f_equal.
          inversion HT.
-         apply IHt1 with (TS T1) ; assumption.
-  Case "tzeroS". doesnt_step_S1.
-  Case "tplusS". doesnt_step_S1.
+         apply IHt2 with (TS T1) ; assumption.
+  Case "tjoinS". 
+    inversion Hstep1 ; subst.
+    SCase "pure step to tx".
+       (* there is no pure step from (joinS t), so this can't happen *)
+       inversion H.
+    SCase "JoinEmpty to tx".
+       inversion Hstep2.
+       SSCase "pure step to ty". inversion H.
+       SSCase "JoinEmpty to ty". reflexivity.
+       SSCase "Join to ty". inversion H0. inversion H2.
+    SCase "JoinSingle to tx".
+       inversion Hstep2.
+       SSCase "pure step to ty". inversion H.
+       SSCase "JoinSingle to ty". reflexivity.
+       SSCase "Join to ty".
+         (* this would require singleS to s1-step, but it doesn't *)
+         inversion H0. inversion H2.
+    SCase "JoinUnion to tx".
+       inversion Hstep2.
+       SSCase "pure to ty". inversion H.
+       SSCase "JoinUnion to ty". reflexivity.
+       SSCase "Join to ty". inversion H0. inversion H2.
+    SCase "Join to tx".
+       inversion Hstep2 ; subst.
+       SSCase "pure to ty". inversion H.
+       SSCase "JoinEmpty to ty".
+         inversion H0. inversion H.
+       SSCase "JoinSingle to ty".
+         inversion H0. inversion H.
+       SSCase "JoinUnion to ty".
+         inversion H0. inversion H.
+       SSCase "Join to ty".
+         f_equal.
+         inversion HT.
+         apply IHt with (TS (TS T0)) ; assumption.
 Qed.
 
 End SmtenS1.
