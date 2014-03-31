@@ -2,3 +2,5 @@ lib/*.glob
 lib/*.vo
 src/*.glob
 src/*.vo
+smten/*.glob
+smten/*.vo

@@ -1,14 +1,15 @@
 
-default: src/SmtenIO.vo src/SmimplS.vo src/SmtrgProp.vo src/Approx.vo
+default: smten/SmtenIO.vo src/SmimplS.vo src/SmtrgProp.vo src/Approx.vo
 
 %.vo: %.v
-	coqc -I lib -I src $<
+	coqc -I lib -I smten -I src $<
 
-src/Smten.vo: lib/SfLib.vo
-src/SmtenProp.vo: lib/SfLib.vo src/Smten.vo
-src/SmtenS1.vo: src/SmtenProp.vo
-src/SmtenS.vo: src/SmtenS1.vo
-src/SmtenIO.vo: src/SmtenS.vo
+smten/Smten.vo: lib/SfLib.vo
+smten/SmtenProp.vo: lib/SfLib.vo smten/Smten.vo
+smten/SmtenS1.vo: smten/SmtenProp.vo
+smten/SmtenS.vo: smten/SmtenS1.vo
+smten/SmtenIO.vo: smten/SmtenS.vo
+
 src/Sat.vo: lib/SfLib.vo
 
 src/Smimpl.vo: lib/SfLib.vo src/Sat.vo
@@ -20,5 +21,5 @@ src/Smtrg.vo: lib/SfLib.vo src/Sat.vo
 src/SmirgProp.vo: src/Smrgl.vo
 
 clean:
-	rm lib/*.vo src/*.vo lib/*.glob src/*.glob
+	rm lib/*.vo src/*.vo smten/*.vo lib/*.glob src/*.glob smten/*.glob
 
