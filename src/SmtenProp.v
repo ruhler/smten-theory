@@ -57,17 +57,22 @@ Proof with auto.
     assert (TS T = TS T0)...
     injection H3. intro.
     rewrite H4. reflexivity.
-  Case "T_ReturnS".
+  Case "T_EmptyS". reflexivity.
+  Case "T_SingleS".
     f_equal. apply IHHTa...
-  Case "T_BindS".
-    f_equal.
-    assert (TArrow T1 (TS T2) = TArrow T0 (TS T3))...
-    injection H5...
-  Case "T_ZeroS". reflexivity.
-  Case "T_PlusS".
+  Case "T_UnionS".
     f_equal.
     assert (TS T = TS T0)...
     injection H5...
+  Case "T_MapS".
+    f_equal.
+    assert (TArrow T1 T2 = TArrow T0 T3)...
+    injection H5...
+  Case "T_JoinS".
+    f_equal.
+    subst.
+    assert (TS (TS T) = TS (TS T0))...
+    injection H...
 Qed.
 
 Theorem progress : forall t T, 
@@ -160,10 +165,11 @@ Proof with eauto.
   Case "T_ReturnIO". isvalue v_returnIO.
   Case "T_BindIO". isvalue v_bindIO.
   Case "T_SearchIO". isvalue v_searchIO.
-  Case "T_ReturnS". isvalue v_returnS.
-  Case "T_BindS". isvalue v_bindS.
-  Case "T_ZeroS". isvalue v_zeroS.
-  Case "T_PlusS". isvalue v_plusS.
+  Case "T_EmptyS". isvalue v_emptyS.
+  Case "T_SingleS". isvalue v_singleS.
+  Case "T_UnionS". isvalue v_unionS.
+  Case "T_MapS". isvalue v_mapS.
+  Case "T_JoinS". isvalue v_joinS.
 Qed.
 
 Inductive appears_free_in : id -> tm -> Prop :=
@@ -219,21 +225,24 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_searchIO : forall x t,
       appears_free_in x t ->
       appears_free_in x (tsearchIO t)
-  | afi_returnS : forall x t,
+  | afi_singleS : forall x t,
       appears_free_in x t ->
-      appears_free_in x (treturnS t)
-  | afi_bindS1 : forall x t1 t2,
+      appears_free_in x (tsingleS t)
+  | afi_unionS1 : forall x t1 t2,
       appears_free_in x t1 ->
-      appears_free_in x (tbindS t1 t2)
-  | afi_bindS2 : forall x t1 t2,
+      appears_free_in x (tunionS t1 t2)
+  | afi_unionS2 : forall x t1 t2,
       appears_free_in x t2 ->
-      appears_free_in x (tbindS t1 t2)
-  | afi_plusS1 : forall x t1 t2,
+      appears_free_in x (tunionS t1 t2)
+  | afi_mapS1 : forall x t1 t2,
       appears_free_in x t1 ->
-      appears_free_in x (tplusS t1 t2)
-  | afi_plusS2 : forall x t1 t2,
+      appears_free_in x (tmapS t1 t2)
+  | afi_mapS2 : forall x t1 t2,
       appears_free_in x t2 ->
-      appears_free_in x (tplusS t1 t2)
+      appears_free_in x (tmapS t1 t2)
+  | afi_joinS : forall x t,
+      appears_free_in x t ->
+      appears_free_in x (tjoinS t)
   .
 
 Tactic Notation "afi_cases" tactic(first) ident(c) :=
@@ -249,9 +258,10 @@ Tactic Notation "afi_cases" tactic(first) ident(c) :=
   | Case_aux c "afi_returnIO"
   | Case_aux c "afi_bindIO1" | Case_aux c "afi_bindIO2"
   | Case_aux c "afi_searchIO"
-  | Case_aux c "afi_returnS"
-  | Case_aux c "afi_bindS1" | Case_aux c "afi_bindS2"
-  | Case_aux c "afi_plusS1" | Case_aux c "afi_plusS2"
+  | Case_aux c "afi_singleS"
+  | Case_aux c "afi_unionS1" | Case_aux c "afi_unionS2"
+  | Case_aux c "afi_mapS1" | Case_aux c "afi_mapS2"
+  | Case_aux c "afi_joinS"
   ].
 
 Hint Constructors appears_free_in.
@@ -297,7 +307,7 @@ Proof with eauto.
   Case "T_Snd". apply T_Snd with T1...
   Case "T_Case". apply T_Case with T1 T2...
   Case "T_BindIO". apply T_BindIO with T1...
-  Case "T_BindS". apply T_BindS with T1...
+  Case "T_MapS". apply T_MapS with T1...
 Qed.
 
 Lemma substitution_preserves_typing : forall Gamma x U t v T,
@@ -428,10 +438,11 @@ Proof with eauto.
   Case "T_ReturnIO". doesnt_step.
   Case "T_BindIO". doesnt_step.
   Case "T_SearchIO". doesnt_step.
-  Case "T_ReturnS". doesnt_step.
-  Case "T_BindS". doesnt_step.
-  Case "T_ZeroS". doesnt_step.
-  Case "T_PlusS". doesnt_step.
+  Case "T_EmptyS". doesnt_step.
+  Case "T_SingleS". doesnt_step.
+  Case "T_UnionS". doesnt_step.
+  Case "T_MapS". doesnt_step.
+  Case "T_JoinS". doesnt_step.
 Qed.
 
 Definition stuck (t:tm) : Prop :=
