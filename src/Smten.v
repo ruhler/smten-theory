@@ -30,13 +30,18 @@ Inductive tm : Type :=
   | tinr : ty -> tm -> tm           (* inr T t *)
   | tcase : tm -> tm -> tm -> tm    (* case t0 t1 t2 *)
   | tfix : tm -> tm                 (* fix t *)
+
+    (* IO space primitives *)
   | treturnIO : tm -> tm            (* return_IO t *)
   | tbindIO : tm -> tm -> tm        (* bind_IO t1 t2 *)
-  | tsearchIO : tm -> tm               (* search_IO t *)
-  | treturnS : tm -> tm             (* return_S t *)
-  | tbindS : tm -> tm -> tm         (* bind_S t1 t2 *)
-  | tzeroS : ty -> tm               (* mzero *)
-  | tplusS : tm -> tm -> tm         (* mplus *)
+  | tsearchIO : tm -> tm            (* search_IO t *)
+
+    (* Search space primitives *)
+  | temptyS : ty -> tm              (* empty *)
+  | tsingleS : tm -> tm             (* single t *)
+  | tunionS : tm -> tm -> tm        (* union t1 t2 *)
+  | tmapS : tm -> tm -> tm          (* map t1 t2 *)
+  | tjoinS : tm -> tm               (* join t *)
   .
 
 Tactic Notation "t_cases" tactic(first) ident(c) :=
@@ -47,8 +52,8 @@ Tactic Notation "t_cases" tactic(first) ident(c) :=
   | Case_aux c "tinl" | Case_aux c "tinr" | Case_aux c "tcase"
   | Case_aux c "tfix" 
   | Case_aux c "treturnIO" | Case_aux c "tbindIO"  | Case_aux c "tsearchIO"
-  | Case_aux c "treturnS" | Case_aux c "tbindS"
-  | Case_aux c "tzeroS" | Case_aux c "tplusS" ].
+  | Case_aux c "temptyS" | Case_aux c "tsingleS" | Case_aux c "tunionS"
+  | Case_aux c "tmapS" | Case_aux c "tjoinS" ].
 
 Definition x := (Id 0).
 Definition y := (Id 1).
@@ -70,10 +75,11 @@ Inductive value : tm -> Prop :=
   | v_returnIO : forall t, value (treturnIO t)
   | v_bindIO : forall t1 t2, value (tbindIO t1 t2)
   | v_searchIO : forall t, value (tsearchIO t)
-  | v_returnS : forall t, value (treturnS t)
-  | v_bindS : forall t1 t2, value (tbindS t1 t2)
-  | v_zeroS : forall T, value (tzeroS T)
-  | v_plusS : forall t1 t2, value (tplusS t1 t2)
+  | v_emptyS : forall T, value (temptyS T)
+  | v_singleS : forall t, value (tsingleS t)
+  | v_unionS : forall t1 t2, value (tunionS t1 t2)
+  | v_mapS : forall t1 t2, value (tmapS t1 t2)
+  | v_joinS : forall t, value (tjoinS t)
   .
 
 Tactic Notation "v_cases" tactic(first) ident(c) :=
@@ -82,8 +88,8 @@ Tactic Notation "v_cases" tactic(first) ident(c) :=
   | Case_aux c "v_pair"
   | Case_aux c "v_inl" | Case_aux c "v_inr" 
   | Case_aux c "v_returnIO" | Case_aux c "v_bindIO" | Case_aux c "v_searchIO"
-  | Case_aux c "v_returnS" | Case_aux c "v_bindS"
-  | Case_aux c "v_zeroS" | Case_aux c "v_plusS"
+  | Case_aux c "v_emptyS" | Case_aux c "v_singleS" | Case_aux c "v_unionS"
+  | Case_aux c "v_mapS" | Case_aux c "v_joinS"
   ].
 
 Hint Constructors value.
@@ -106,10 +112,11 @@ Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
   | treturnIO t1 => treturnIO ([x:=s] t1)
   | tbindIO t1 t2 => tbindIO ([x:=s] t1) ([x:=s] t2)
   | tsearchIO t1 => tsearchIO ([x:=s] t1)
-  | treturnS t1 => treturnS ([x:=s] t1)
-  | tbindS t1 t2 => tbindS ([x:=s] t1) ([x:=s] t2)
-  | tzeroS T => tzeroS T
-  | tplusS t1 t2 => tplusS ([x:=s] t1) ([x:=s] t2)
+  | temptyS T => temptyS T
+  | tsingleS t1 => tsingleS ([x:=s] t1)
+  | tunionS t1 t2 => tunionS ([x:=s] t1) ([x:=s] t2)
+  | tmapS t1 t2 => tmapS ([x:=s] t1) ([x:=s] t2)
+  | tjoinS t1 => tjoinS ([x:=s] t1)
   end
 
 where "'[' x ':=' s ']' t" := (subst x s t).
@@ -209,19 +216,22 @@ Inductive has_type : context -> tm -> ty -> Prop :=
   | T_SearchIO : forall Gamma t T,
        Gamma |- t \in (TS T) ->
        Gamma |- tsearchIO t \in (TIO (TMaybe T))
-  | T_ReturnS : forall Gamma t T,
+  | T_EmptyS : forall Gamma T,
+       Gamma |- temptyS T \in (TS T)
+  | T_SingleS : forall Gamma t T,
        Gamma |- t \in T ->
-       Gamma |- treturnS t \in (TS T)
-  | T_BindS : forall Gamma t1 t2 T1 T2,
-       Gamma |- t1 \in (TS T1) ->
-       Gamma |- t2 \in (TArrow T1 (TS T2)) ->
-       Gamma |- tbindS t1 t2 \in (TS T2)
-  | T_ZeroS : forall Gamma T,
-       Gamma |- tzeroS T \in (TS T)
-  | T_PlusS : forall Gamma t1 t2 T,
+       Gamma |- tsingleS t \in (TS T)
+  | T_UnionS : forall Gamma t1 t2 T,
        Gamma |- t1 \in (TS T) ->
        Gamma |- t2 \in (TS T) ->
-       Gamma |- tplusS t1 t2 \in (TS T)
+       Gamma |- tunionS t1 t2 \in (TS T)
+  | T_MapS : forall Gamma t1 t2 T1 T2,
+       Gamma |- t1 \in (TArrow T1 T2) ->
+       Gamma |- t2 \in (TS T1) ->
+       Gamma |- tmapS t1 t2 \in (TS T2)
+  | T_JoinS : forall Gamma t T,
+       Gamma |- t \in (TS (TS T)) ->
+       Gamma |- tjoinS t \in (TS T)
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T).
 
@@ -233,8 +243,8 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   | Case_aux c "T_Inl" | Case_aux c "T_Inr" | Case_aux c "T_Case" 
   | Case_aux c "T_Fix"
   | Case_aux c "T_ReturnIO" | Case_aux c "T_BindIO" | Case_aux c "T_SearchIO"
-  | Case_aux c "T_ReturnS" | Case_aux c "T_BindS" 
-  | Case_aux c "T_ZeroS" | Case_aux c "T_PlusS" ].
+  | Case_aux c "T_EmptyS" | Case_aux c "T_SingleS" | Case_aux c "T_UnionS"
+  | Case_aux c "T_MapS" | Case_aux c "T_JoinS" ].
 
 Hint Constructors has_type.
 
